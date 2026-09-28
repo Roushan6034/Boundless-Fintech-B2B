@@ -28,19 +28,19 @@ graph TD
     Gateway --> Identity[Identity Service :8081]
     Gateway --> Ledger[Ledger Service :8083]
     
-    AuthEngine -->|1. O(1) Fraud & Balance Checks| Redis[(Redis)]
-    AuthEngine -->|2. Publishes AuthApproved| Kafka((Apache Kafka))
+    AuthEngine -->|"1. O(1) Fraud & Balance Checks"| Redis[(Redis)]
+    AuthEngine -->|"2. Publishes AuthApproved"| Kafka((Apache Kafka))
     
-    Identity -->|Manages Multi-Tenant B2B Data| Postgres[(PostgreSQL)]
+    Identity -->|"Manages Multi-Tenant B2B Data"| Postgres[(PostgreSQL)]
     
-    Ledger -->|Consumes Event & Settles| Postgres
-    Ledger -->|Hourly CRON Enforces SLA| Kafka
+    Ledger -->|"Consumes Event & Settles"| Postgres
+    Ledger -->|"Hourly CRON Enforces SLA"| Kafka
     
-    Notification[Notification Service] -->|Listens & Dispatches SMTP| Kafka
+    Notification[Notification Service] -->|"Listens & Dispatches SMTP"| Kafka
     Notification --> Email[Employee / Admin Inbox]
     
-    Identity -->|Consumes SLA Breaches| Kafka
-    Identity -->|Freezes Card| Redis
+    Identity -->|"Consumes SLA Breaches"| Kafka
+    Identity -->|"Freezes Card"| Redis
 ```
 
 ---
