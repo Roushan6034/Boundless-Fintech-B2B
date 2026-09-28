@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boundless Live Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0d1117; color: #c9d1d9; margin: 0; padding: 40px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 20px; margin-bottom: 30px; }
+        .status { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; background-color: #238636; color: #fff; }
+        .status.disconnected { background-color: #da3633; }
+        .card { background-color: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); animation: slideIn 0.3s ease-out; display: flex; justify-content: space-between; align-items: center; }
+        .amount { font-size: 24px; font-weight: bold; color: #58a6ff; }
+        .merchant { font-size: 18px; font-weight: 600; margin-bottom: 5px; }
+        .details { color: #8b949e; font-size: 14px; }
+        .tag { background: #30363d; padding: 4px 8px; border-radius: 6px; font-size: 12px; margin-left: 10px;}
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .empty-state { text-align: center; color: #8b949e; margin-top: 50px; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>💸 Boundless FinTech | Live Spending</h1>
+        <div id="connection-status" class="status disconnected">Disconnected</div>
+    </div>
+
+    <div id="transactions">
+        <div class="empty-state" id="empty-state">Waiting for live transactions...<br><br>Swipe a card via the API to see it appear here instantly!</div>
+    </div>
+
+    <script>
+        let stompClient = null;
+
+        function connect() {
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            
+            // Disable debug logging in console for a cleaner experience
+            stompClient.debug = null;
+
+            stompClient.connect({}, function (frame) {
+                const status = document.getElementById('connection-status');
+                status.textContent = '🟢 Connected to WebSocket';
+                status.classList.remove('disconnected');
+                
+                stompClient.subscribe('/topic/transactions', function (message) {
+                    const tx = JSON.parse(message.body);
+                    displayTransaction(tx);
+                });
+            }, function(error) {
+                document.getElementById('connection-status').textContent = '🔴 Disconnected';
+                document.getElementById('connection-status').classList.add('disconnected');
+                setTimeout(connect, 5000); // Auto-reconnect
+            });
+        }
+
+        function displayTransaction(tx) {
+            document.getElementById('empty-state').style.display = 'none';
+            const container = document.getElementById('transactions');
+            
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card';
+            
+            // Format time
+            const time = new Date(tx.timestamp).toLocaleTimeString();
+            
+            cardElement.innerHTML = `
+                <div>
+                    <div class="merchant">${tx.merchant} <span class="tag">Card ending in ${tx.card.substring(tx.card.length - 4)}</span></div>
+                    <div class="details">ID: ${tx.id} • ${time}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="amount">₹${tx.amount} ${tx.currency}</div>
+                    <div class="details">Original: ${tx.originalAmount} ${tx.originalCurrency}</div>
+                </div>
+            `;
+            
+            container.insertBefore(cardElement, container.firstChild);
+        }
+
+        // Connect immediately on load
+        connect();
+    </script>
+</body>
+</html>

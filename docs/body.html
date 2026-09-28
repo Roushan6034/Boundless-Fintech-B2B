@@ -1,0 +1,300 @@
+<h1>Boundless FinTech Platform: The Definitive Master Architecture Guide</h1>
+<p>Welcome to the exhaustive, minute-by-minute architectural masterclass for the Boundless FinTech Platform. This document leaves no stone unturned. It covers every edge case, every database relation, every Kafka topic, and every sub-200ms optimization required to run a massive B2B Corporate Spend Management system.</p>
+<hr>
+<h2>CHAPTER 1: The Business Model &amp; Domain Entities</h2>
+<p>Boundless is not a consumer bank. It is a <strong>Business-to-Business (B2B) Spend Management Platform</strong>. Our clients are startup founders and corporate treasurers (e.g., Acme Corp) who need to issue corporate credit cards to their employees for software subscriptions, travel, and expenses.</p>
+<p>To support this, the database is strictly modeled around corporate hierarchies:</p>
+<h3>1.1 The Company Entity</h3>
+<p>Before anyone can use the platform, the legal entity must be verified via KYB (Know Your Business).</p>
+<ul>
+<li><strong>Attributes</strong>: <code>companyName</code>, <code>einNumber</code> (Employer Identification Number), and <code>kybStatus</code> (PENDING, APPROVED, FROZEN).</li>
+<li><strong>The Freeze Mechanism</strong>: If the Risk &amp; Compliance team detects money laundering, they flip the company&#39;s <code>kybStatus</code> to FROZEN. This instantly cascades, freezing every Master Wallet, every Employee Wallet, and every Virtual Card associated with that Tenant.</li>
+</ul>
+<h3>1.2 The Master Wallet</h3>
+<p>This is the lifeblood of the tenant. Boundless does not extend credit. We are a pre-paid platform.</p>
+<ul>
+<li><strong>The Flow</strong>: Acme Corp wires $100,000 of real USD from their Chase Bank account to Boundless&#39;s master treasury account.</li>
+<li><strong>The Minting</strong>: The Boundless <code>ROLE_PLATFORM_TREASURY</code> officer intercepts that wire, logs into the Internal Ops portal, and mints $100,000 of digital liquidity into Acme Corp&#39;s <code>MasterWallet</code>.</li>
+<li><strong>Constraint</strong>: The <code>MasterWallet</code> is a singular pool. Employees cannot swipe directly against it.</li>
+</ul>
+<h3>1.3 The Employee Wallet</h3>
+<p>To allow an employee to spend money, the Company Admin must carve out a specific budget.</p>
+<ul>
+<li><strong>The Allocation</strong>: If a founder wants to give an employee a $500 travel budget, the system atomically deducts $500 from the <code>MasterWallet</code> and moves it into the Employee&#39;s <code>Wallet</code>.</li>
+<li><strong>Isolation</strong>: An employee can have multiple wallets (e.g., &quot;Software Subscriptions&quot;, &quot;Travel&quot;, &quot;Per Diems&quot;), each with its own isolated balance.</li>
+</ul>
+<h3>1.4 The Virtual Card (The PAN)</h3>
+<p>The virtual card is the 16-digit Primary Account Number (PAN) that the employee actually types into Amazon or hands to a barista.</p>
+<ul>
+<li><strong>The Binding</strong>: Every card is strictly bound to exactly one <code>Wallet</code> (Foreign Key: <code>wallet_id</code>).</li>
+<li><strong>Card Types</strong>: Cards can be <code>STANDARD</code> (multi-use, recurring) or <code>BURNER</code> (single-use, auto-destructing).</li>
+</ul>
+<hr>
+<h2>CHAPTER 2: Multi-Tenancy &amp; Row-Level Security</h2>
+<p>Because Boundless hosts multiple competitor companies (Acme Corp and Globex) in the exact same PostgreSQL database, data leakage is catastrophic. We prevent this using strict Row-Level Security (RLS) enforced at the application layer.</p>
+<h3>2.1 The Identity Binding</h3>
+<p>Every <code>User</code> in the database has a <code>companyName</code> column. This is the tenant identifier.
+When a user logs in, the <code>JwtService</code> embeds their <code>companyName</code> inside the cryptographically signed JWT payload.</p>
+<h3>2.2 Endpoint Isolation</h3>
+<p>When the Acme Corp Admin hits the <code>GET /api/company-admin/employees</code> endpoint, the <code>CompanyAdminController</code> extracts the <code>companyName</code> directly from the JWT Context. 
+It executes: <code>SELECT * FROM users WHERE companyName = &#39;Acme Corp&#39;</code>.
+It is mathematically impossible for the Acme Admin to query or view employees belonging to Globex, because the <code>WHERE</code> clause is hardcoded to their authenticated JWT identity.</p>
+<h3>2.3 Financial Isolation</h3>
+<p>When the Acme Corp Admin tries to issue a card to an employee <code>UUID</code>:</p>
+<ol>
+<li>The controller looks up the target Employee.</li>
+<li>It compares <code>Employee.companyName</code> against <code>Admin.companyName</code>.</li>
+<li>If they do not match exactly, the system throws a <code>SecurityException: Cannot fund an employee outside your company!</code> and drops a proactive alert to the internal security team.</li>
+</ol>
+<hr>
+<h2>CHAPTER 3: The Internal Ops Triad</h2>
+<p>To prevent massive internal fraud, Boundless fractures platform administration into three distinct teams. No single employee has &quot;God Mode&quot;.</p>
+<h3>3.1 The Treasury Team (<code>ROLE_PLATFORM_TREASURY</code>)</h3>
+<ul>
+<li><strong>Mandate</strong>: Liquidity Management.</li>
+<li><strong>Power</strong>: They are the only team with access to <code>POST /api/internal-ops/master-wallet/fund</code>. They bridge the gap between the real banking world and the digital database.</li>
+<li><strong>Alerts</strong>: If a founder tries to allocate budget to an employee but the Master Wallet is empty, the Treasury team receives an automated Kafka alert to proactively email the founder asking for a wire transfer.</li>
+</ul>
+<h3>3.2 Risk &amp; Compliance (<code>ROLE_PLATFORM_COMPLIANCE</code>)</h3>
+<ul>
+<li><strong>Mandate</strong>: Anti-Money Laundering (AML) &amp; Fraud Prevention.</li>
+<li><strong>Power</strong>: They have the ability to hit <code>/api/internal-ops/companies/{name}/freeze</code>.</li>
+<li><strong>Alerts</strong>: If the Auth Engine detects a Brute Force CVV attack, or an employee trying to swipe at an illegal casino, it drops an alert. The Compliance team is notified instantly and can lock down the tenant.</li>
+</ul>
+<h3>3.3 Customer Success (<code>ROLE_PLATFORM_SUPPORT</code>)</h3>
+<ul>
+<li><strong>Mandate</strong>: Client Retention &amp; Troubleshooting.</li>
+<li><strong>Power</strong>: They have Read-Only access across the platform (<code>GET /overview</code>). They cannot move money or freeze accounts.</li>
+<li><strong>Alerts</strong>: If an employee is declined at Starbucks for &quot;Insufficient Funds&quot;, Support gets the alert. When the employee calls to complain, Support already has the dashboard open and can explain that the founder hasn&#39;t allocated enough budget.</li>
+</ul>
+<hr>
+<h2>CHAPTER 4: The Fast Path (The 200ms Auth Engine)</h2>
+<p>The <code>auth-engine-service</code> is the crown jewel of the platform. When a card is swiped at a terminal, Visa fires a webhook to <code>POST /api/network/swipe</code>. Visa requires a response in under 200 milliseconds. If the system takes 201ms, Visa drops the connection and declines the card.</p>
+<p>To achieve this, the Auth Engine <strong>completely ignores PostgreSQL</strong>. Disk I/O is too slow. It relies entirely on a pre-warmed Redis In-Memory Data Grid.</p>
+<h3>4.1 The Redis Synchronization</h3>
+<p>When the Identity Service issues a card, it doesn&#39;t just save it to Postgres. It pushes critical O(1) routing data to Redis:</p>
+<ul>
+<li><code>SET card:{pan}:wallet {wallet_id}</code></li>
+<li><code>SET wallet:{wallet_id}:balance 500.00</code></li>
+<li><code>SET card:{pan}:type STANDARD</code></li>
+</ul>
+<h3>4.2 The Chain of Responsibility Gauntlet</h3>
+<p>When the Visa webhook arrives, the <code>FraudEngine</code> class runs it through a gauntlet of Java rules. If any rule fails, the chain breaks and a 400 Bad Request is returned.</p>
+<ol>
+<li><strong>Velocity Rule</strong>: The system calls <code>INCR velocity:{pan}:{YYYY-MM-DD}</code> in Redis. If the returned integer is &gt; 10, the card has been swiped too many times today. Decline.</li>
+<li><strong>Merchant Category Code (MCC) Rule</strong>: The system checks the <code>merchantName</code> string against a highly restricted regex blacklist. &quot;Las Vegas Casino&quot;, &quot;Local Dive Bar&quot;, and &quot;Binance Crypto&quot; trigger an instant decline and a Kafka alert to Compliance.</li>
+<li><strong>Brute Force Rule</strong>: If the CVV provided by Visa doesn&#39;t match, <code>INCR cvv_failures:{pan}</code> is called. If the hacker hits 3 failures, the card is locked for 24 hours. Decline.</li>
+<li><strong>The Balance Rule (The Core Logic)</strong>:<ul>
+<li>The system looks up the wallet: <code>GET card:{pan}:wallet</code>.</li>
+<li>It executes an atomic <code>DECRBYFLOAT wallet:{wallet_id}:balance {amount}</code>.</li>
+<li>If the resulting balance is negative (e.g., -5.00), it immediately reverses it (<code>INCRBYFLOAT</code>) and throws an Insufficient Funds exception.</li>
+<li>If positive, the transaction is approved!</li>
+</ul>
+</li>
+</ol>
+<h3>4.3 The Single-Use Burner Sequence</h3>
+<p>If the card passes the gauntlet, the Auth Engine checks <code>GET card:{pan}:type</code>.
+If the string equals <code>BURNER</code>, the Auth Engine executes a self-destruct.
+It calls <code>DEL card:{pan}:wallet</code> and <code>DEL card:{pan}:status</code>.
+The card ceases to exist in the Fast Path memory. If a hacker steals the number and tries to use it 5 seconds later, the Auth Engine will return &quot;Card Not Found&quot;.</p>
+<hr>
+<h2>CHAPTER 5: The Slow Path (Ledger &amp; SLA Compliance)</h2>
+<p>Because the Auth Engine has no time to write to PostgreSQL or enforce corporate receipt policies, it relies on Event-Driven Architecture.
+When the Auth Engine approves a swipe, it publishes an <code>auth-approved-topic</code> string to Apache Kafka and returns 200 OK to Visa. Its job is done.</p>
+<h3>5.1 Asynchronous Settlement</h3>
+<p>The <code>ledger-service</code> listens to <code>auth-approved-topic</code>. When it consumes the event, it parses the JSON and executes a heavy <code>INSERT INTO transaction_ledger</code> SQL statement. This permanently records the financial history for tax auditors.</p>
+<h3>5.2 The RBI OTP Mandate</h3>
+<p>If the swipe amount is massive (e.g., &gt; ₹5,000), the Reserve Bank of India (RBI) requires 2-Factor Authentication.</p>
+<ul>
+<li>The Auth Engine halts the transaction, returning <code>202 PENDING_OTP</code> to Visa.</li>
+<li>It generates a 6-digit code, saves <code>SET otp:{pan} 123456 EX 300</code> in Redis.</li>
+<li>It drops an <code>otp-email-topic</code> Kafka event.</li>
+<li>The Notification service emails the code to the employee&#39;s phone.</li>
+<li>The transaction is frozen in mid-air until the employee proves their identity.</li>
+</ul>
+<h3>5.3 The 24-Hour Receipt SLA (The Enforcer)</h3>
+<p>Corporate tax law requires physical receipts for large purchases. Boundless automates this entirely.</p>
+<ol>
+<li><strong>The Warning</strong>: The moment a $50+ transaction settles, the Ledger Service drops a <code>receipt-reminder-topic</code> event. The employee immediately gets an email: &quot;Please upload your receipt within 24 hours.&quot;</li>
+<li><strong>The Cron Job</strong>: Inside the Ledger Service is a Spring <code>@Scheduled</code> method running every 5 minutes.<ul>
+<li>It queries: <code>SELECT * FROM transaction_ledger WHERE amount &gt; 50 AND receiptUploaded = false AND created_at &lt; (NOW - 24 HOURS)</code>.</li>
+<li>If it finds a guilty transaction, it drops a <code>card-freeze-topic</code> event to Kafka.</li>
+</ul>
+</li>
+<li><strong>The Freeze</strong>: The Identity Service consumes the freeze event. It executes <code>SET card:{pan}:status FROZEN</code> in Redis. <ul>
+<li>Result: The employee is stranded at a restaurant and their card is declined until they do their expense reports!</li>
+</ul>
+</li>
+</ol>
+<h3>5.4 S3 Object Storage Unfreezing</h3>
+<p>To unlock their card, the employee must upload an image.</p>
+<ol>
+<li>They hit <code>POST /api/transactions/{id}/receipt</code> with a Multipart File.</li>
+<li>The Ledger Service connects to <strong>MinIO (AWS S3 Compatible Storage)</strong> and streams the image bytes into the <code>boundless-receipts</code> bucket.</li>
+<li>It saves the public <code>s3Url</code> in Postgres and sets <code>receiptUploaded = true</code>.</li>
+<li>It fires a <code>card-unfreeze-topic</code> Kafka event.</li>
+<li>The Identity Service hears it and calls <code>DEL card:{pan}:status</code> in Redis. The card is instantly active again!</li>
+</ol>
+<hr>
+<h2>CHAPTER 6: Kafka Topic Dictionary &amp; Data Payloads</h2>
+<p>The entire nervous system of the 5 microservices relies on these precise Kafka payloads:</p>
+<ol>
+<li><strong><code>auth-approved-topic</code></strong>: <code>{&quot;cardNumber&quot;:&quot;4111...&quot;, &quot;merchantName&quot;:&quot;Starbucks&quot;, &quot;amount&quot;:&quot;4.50&quot;}</code><ul>
+<li><em>Producer</em>: Auth Engine | <em>Consumer</em>: Ledger</li>
+</ul>
+</li>
+<li><strong><code>employee-onboarding-topic</code></strong>: <code>{&quot;email&quot;:&quot;john@acme.com&quot;, &quot;employeeId&quot;:&quot;EMP-123&quot;, &quot;tempPassword&quot;:&quot;...&quot;}</code><ul>
+<li><em>Producer</em>: Identity | <em>Consumer</em>: Notification</li>
+</ul>
+</li>
+<li><strong><code>otp-email-topic</code></strong>: <code>{&quot;cardNumber&quot;:&quot;4111...&quot;, &quot;otp&quot;:&quot;123456&quot;}</code><ul>
+<li><em>Producer</em>: Auth Engine | <em>Consumer</em>: Notification</li>
+</ul>
+</li>
+<li><strong><code>receipt-reminder-topic</code></strong>: <code>{&quot;cardNumber&quot;:&quot;4111...&quot;, &quot;merchantName&quot;:&quot;Delta Airlines&quot;, &quot;amount&quot;:&quot;450.00&quot;}</code><ul>
+<li><em>Producer</em>: Ledger | <em>Consumer</em>: Notification</li>
+</ul>
+</li>
+<li><strong><code>card-freeze-topic</code></strong>: <code>{&quot;cardNumber&quot;:&quot;4111...&quot;, &quot;reason&quot;:&quot;Missed 24-hour receipt SLA&quot;}</code><ul>
+<li><em>Producer</em>: Ledger (Cron) | <em>Consumer</em>: Identity</li>
+</ul>
+</li>
+<li><strong><code>card-unfreeze-topic</code></strong>: <code>&quot;4111...&quot;</code> (Just the string PAN)<ul>
+<li><em>Producer</em>: Ledger (S3 Upload) | <em>Consumer</em>: Identity</li>
+</ul>
+</li>
+<li><strong><code>card-closed-topic</code></strong>: <code>&quot;4111...&quot;</code> (Just the string PAN)<ul>
+<li><em>Producer</em>: Auth Engine (Burner sequence) | <em>Consumer</em>: Identity</li>
+</ul>
+</li>
+<li><strong><code>internal-alert-topic</code></strong>: <code>{&quot;role&quot;:&quot;ROLE_PLATFORM_COMPLIANCE&quot;, &quot;targetEmail&quot;:&quot;compliance@boundless.com&quot;, &quot;alert&quot;:&quot;SECURITY INCIDENT: Swipe declined for Binance Crypto.&quot;}</code><ul>
+<li><em>Producer</em>: Auth/Identity | <em>Consumer</em>: Notification</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>CHAPTER 7: Architecture Diagrams &amp; Data Flow Control</h2>
+<p>To truly understand how Boundless prevents data leakage and hits sub-200ms speeds, we must map the control flow and data flow visually.</p>
+<h3>7.1 Global System Architecture</h3>
+<p>This diagram illustrates the macro-level boundaries. Notice how the Fast Path (Red) is completely isolated from the Slow Path (Blue).</p>
+<pre><code class="language-mermaid">flowchart TD
+    %% External Entities
+    subgraph ExternalNetwork [External Network]
+        VISA[Visa / Mastercard Network]
+        WEB[Web Dashboard / Mobile App]
+    end
+
+    %% API Gateway Layer
+    GW[API Gateway Service :8080]
+    
+    %% Core Services
+    subgraph AdminPlane [The Administrative Control Plane]
+        ID[Card Identity Service :8081]
+        PG[(PostgreSQL
+Permanent Record)]
+    end
+
+    subgraph FastPath [The Fast Path]
+        AUTH[Auth Engine Service :8082]
+        REDIS[(Redis Cluster
+In-Memory Grid)]
+    end
+
+    subgraph AsyncSettlement [Async Settlement &amp; Compliance]
+        KAFKA{Apache Kafka
+Event Bus}
+        LEDGER[Ledger Service :8083]
+        NOTIF[Notification Service :8084]
+        S3[(MinIO S3
+Object Storage)]
+    end
+
+    %% Relationships
+    WEB --&gt; GW
+    GW --&gt; ID
+    ID &lt;--&gt; PG
+    ID -- Pushes O(1) Routing Data --&gt; REDIS
+    
+    VISA -- POST /swipe --&gt; AUTH
+    AUTH &lt;--&gt; REDIS
+    AUTH -- Drops Event --&gt; KAFKA
+    
+    KAFKA -- Consumes --&gt; LEDGER
+    KAFKA -- Consumes --&gt; NOTIF
+    KAFKA -- Consumes --&gt; ID
+    
+    LEDGER --&gt; PG
+    LEDGER --&gt; S3
+    
+    classDef fast fill:#fee2e2,stroke:#ef4444,stroke-width:2px;
+    classDef slow fill:#e0f2fe,stroke:#3b82f6,stroke-width:2px;
+    
+    class AUTH,REDIS fast;
+    class ID,PG,LEDGER,S3 slow;
+</code></pre>
+<h3>7.2 The 200ms Transaction Sequence (Data Flow)</h3>
+<p>When an employee swipes their card, the data flow is strictly controlled to ensure atomic deductions and absolute speed. Notice how the Ledger is completely bypassed during the critical path.</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    autonumber
+    actor Employee
+    participant Terminal as Point of Sale
+    participant Visa as Visa Network
+    participant Auth as Auth Engine
+    participant Redis as Redis Grid
+    participant Kafka as Apache Kafka
+    participant Ledger as Ledger Service
+
+    Employee-&gt;&gt;Terminal: Swipes Card for $5.00
+    Terminal-&gt;&gt;Visa: Request Authorization
+    Visa-&gt;&gt;Auth: POST /api/network/swipe
+    
+    activate Auth
+    Auth-&gt;&gt;Redis: 1. INCR velocity (Check daily limit)
+    Redis--&gt;&gt;Auth: OK (Swipes = 4)
+    
+    Auth-&gt;&gt;Redis: 2. GET card:wallet (Routing lookup)
+    Redis--&gt;&gt;Auth: wallet-id-123
+    
+    Auth-&gt;&gt;Redis: 3. DECRBYFLOAT wallet:balance 5.00 (Atomic Deduction)
+    Redis--&gt;&gt;Auth: New Balance: $145.00
+    
+    Auth-&gt;&gt;Kafka: 4. Publish `auth-approved-topic`
+    
+    Auth--&gt;&gt;Visa: 5. HTTP 200 OK (APPROVED)
+    deactivate Auth
+    
+    Visa--&gt;&gt;Terminal: Approved!
+    Terminal--&gt;&gt;Employee: Prints Receipt
+    
+    %% Asynchronous Flow
+    Note over Kafka,Ledger: Asynchronous Settlement (Slow Path)
+    Kafka-&gt;&gt;Ledger: Consumes `auth-approved-topic`
+    Ledger-&gt;&gt;Ledger: INSERT INTO transaction_ledger
+    Ledger-&gt;&gt;Kafka: Publish `receipt-reminder-topic`
+</code></pre>
+<h3>7.3 Multi-Tenancy Control Flow (Row-Level Security)</h3>
+<p>How does the system mathematically guarantee that a Manager at Acme Corp cannot view an Employee at Globex? </p>
+<pre><code class="language-mermaid">sequenceDiagram
+    autonumber
+    actor Admin as Acme Corp Admin
+    participant Gateway as API Gateway
+    participant Jwt as JwtService
+    participant ID as Identity Service
+    participant DB as PostgreSQL
+
+    Admin-&gt;&gt;Gateway: GET /api/employees (Bearer Token)
+    Gateway-&gt;&gt;Jwt: Validate Cryptographic Signature
+    Jwt--&gt;&gt;Gateway: Valid! Claims: {email, role, companyName=&quot;Acme Corp&quot;}
+    
+    Gateway-&gt;&gt;ID: Forward Request with Security Context
+    
+    activate ID
+    ID-&gt;&gt;ID: Extract &quot;Acme Corp&quot; from Security Context
+    ID-&gt;&gt;DB: SELECT * FROM users WHERE companyName = &#39;Acme Corp&#39;
+    DB--&gt;&gt;ID: Returns List of Acme Employees
+    ID--&gt;&gt;Gateway: HTTP 200 OK (JSON List)
+    deactivate ID
+    
+    Gateway--&gt;&gt;Admin: Displays Employees on Dashboard
+</code></pre>
+

@@ -1,0 +1,46 @@
+flowchart TD
+    subgraph External
+        VISA[Visa / Mastercard]
+        WEB[Web Dashboard]
+    end
+
+    GW[API Gateway :8080]
+    
+    subgraph AdminPlane
+        ID[Identity Service :8081]
+        PG[(PostgreSQL)]
+    end
+
+    subgraph FastPath
+        AUTH[Auth Engine :8082]
+        REDIS[(Redis Grid)]
+    end
+
+    subgraph SlowPath
+        KAFKA{Kafka Bus}
+        LEDGER[Ledger Service :8083]
+        NOTIF[Notification :8084]
+        S3[(MinIO S3)]
+    end
+
+    WEB --> GW
+    GW --> ID
+    ID <--> PG
+    ID -- Route Data --> REDIS
+    
+    VISA -- POST swipe --> AUTH
+    AUTH <--> REDIS
+    AUTH -- Drop Event --> KAFKA
+    
+    KAFKA -- Consume --> LEDGER
+    KAFKA -- Consume --> NOTIF
+    KAFKA -- Consume --> ID
+    
+    LEDGER --> PG
+    LEDGER --> S3
+    
+    classDef fast fill:#fee2e2,stroke:#ef4444,stroke-width:2px;
+    classDef slow fill:#e0f2fe,stroke:#3b82f6,stroke-width:2px;
+    
+    class AUTH,REDIS fast;
+    class ID,PG,LEDGER,S3 slow;

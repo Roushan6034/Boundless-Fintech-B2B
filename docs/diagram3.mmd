@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    actor Admin as Acme Corp Admin
+    participant Gateway as API Gateway
+    participant Jwt as JwtService
+    participant ID as Identity Service
+    participant DB as PostgreSQL
+
+    Admin->>Gateway: GET /api/employees (Bearer Token)
+    Gateway->>Jwt: Validate Cryptographic Signature
+    Jwt-->>Gateway: Valid! Claims: {email, role, companyName="Acme Corp"}
+    
+    Gateway->>ID: Forward Request with Security Context
+    
+    activate ID
+    ID->>ID: Extract "Acme Corp" from Security Context
+    ID->>DB: SELECT * FROM users WHERE companyName = 'Acme Corp'
+    DB-->>ID: Returns List of Acme Employees
+    ID-->>Gateway: HTTP 200 OK (JSON List)
+    deactivate ID
+    
+    Gateway-->>Admin: Displays Employees on Dashboard

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Boundless FinTech - Transaction Flow Deep Dive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; line-height: 1.7; color: #334155; background-color: #f1f5f9; margin: 0; padding: 0; }
+        .container { max-width: 1000px; margin: 40px auto; padding: 60px 80px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        h1 { color: #0f172a; font-size: 2.5rem; border-bottom: 4px solid #2563eb; padding-bottom: 15px; text-align: center; }
+        h2 { color: #1e293b; font-size: 1.8rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 50px; }
+        h3 { color: #2563eb; font-size: 1.3rem; margin-top: 30px; }
+        p, li { font-size: 1.15rem; margin-bottom: 15px; }
+        code { background-color: #f1f5f9; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: 600; }
+        .diagram-container { display: flex; justify-content: center; margin: 40px 0; padding: 30px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; }
+        .diagram-container img { max-width: 100%; height: auto; }
+        .header-bar { background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%); height: 12px; width: 100%; position: fixed; top: 0; left: 0; z-index: 1000; }
+        .step-box { background: #f8fafc; border-left: 4px solid #3b82f6; padding: 20px; margin-bottom: 20px; border-radius: 0 8px 8px 0; }
+        .step-box h4 { margin-top: 0; color: #0f172a; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+    <div class="header-bar"></div>
+    <div class="container">
+        <h1>The 200ms Transaction Lifecycle</h1>
+        <p style="text-align: center; font-size: 1.2rem; color: #64748b; margin-bottom: 40px;">An exhaustive, step-by-step breakdown of the Auth Engine's business logic, fraud gauntlet, and human operational resolution flows.</p>
+        
+        <div class="diagram-container">
+            <img src="https://mermaid.ink/svg/c2VxdWVuY2VEaWFncmFtCiAgICBhdXRvbnVtYmVyCiAgICBhY3RvciBFbXBsb3llZQogICAgcGFydGljaXBhbnQgVGVybWluYWwgYXMgUG9pbnQgb2YgU2FsZQogICAgcGFydGljaXBhbnQgQXV0aCBhcyBBdXRoIEVuZ2luZQogICAgcGFydGljaXBhbnQgUmVkaXMgYXMgUmVkaXMgR3JpZAogICAgcGFydGljaXBhbnQgS2Fma2EgYXMgQXBhY2hlIEthZmthCiAgICBwYXJ0aWNpcGFudCBOb3RpZiBhcyBOb3RpZmljYXRpb24gU2VydmljZQogICAgYWN0b3IgT3BzIGFzIEludGVybmFsIE9wcyAoSHVtYW4pCiAgICBwYXJ0aWNpcGFudCBJRCBhcyBJZGVudGl0eSBTZXJ2aWNlCgogICAgRW1wbG95ZWUtPj5UZXJtaW5hbDogU3dpcGVzIFZpcnR1YWwgQ2FyZAogICAgVGVybWluYWwtPj5BdXRoOiBQT1NUIC9hcGkvbmV0d29yay9zd2lwZSBKU09OCiAgICAKICAgIGFjdGl2YXRlIEF1dGgKICAgIAogICAgTm90ZSByaWdodCBvZiBBdXRoOiBQaGFzZSAxOiBGcmF1ZCBHYXVudGxldAogICAgQXV0aC0-PkF1dGg6IENoZWNrIE1lcmNoYW50IENhdGVnb3J5IENvZGUgKE1DQykKICAgIGFsdCBpcyBDYXNpbm8gKFJlc3RyaWN0ZWQpCiAgICAgICAgQXV0aC0-PkthZmthOiBQdWJsaXNoIGludGVybmFsLWFsZXJ0LXRvcGljCiAgICAgICAgS2Fma2EtPj5Ob3RpZjogQ29uc3VtZXMgQWxlcnQgRXZlbnQKICAgICAgICBOb3RpZi0-Pk9wczogU2VuZHMgU01UUCBFbWFpbCAoQ29tcGxpYW5jZSBBbGVydCkKICAgICAgICBBdXRoLS0-PlRlcm1pbmFsOiBIVFRQIDQwMyBGb3JiaWRkZW4gKERlY2xpbmVkKQogICAgICAgIAogICAgICAgIE5vdGUgcmlnaHQgb2YgT3BzOiBQb3N0LUFsZXJ0IFJlc29sdXRpb24KICAgICAgICBPcHMtPj5JRDogUE9TVCAvYXBpL2ludGVybmFsLW9wcy9jb21wYW5pZXMvZnJlZXplCiAgICAgICAgSUQtPj5SZWRpczogREVMIGNhcmQgKEtpbGwgU3dpdGNoIERlcGxveWVkKQogICAgZWxzZSBpcyBWYWxpZCBNZXJjaGFudAogICAgICAgIEF1dGgtPj5SZWRpczogSU5DUiB2ZWxvY2l0eSAoRGFpbHkgTGltaXQpCiAgICAgICAgCiAgICAgICAgTm90ZSByaWdodCBvZiBBdXRoOiBQaGFzZSAyOiBMaXF1aWRpdHkgQ2hlY2sKICAgICAgICBBdXRoLT4-UmVkaXM6IERFQ1JCWUZMT0FUIHdhbGxldDoxMjM6YmFsYW5jZSBBbW91bnQKICAgICAgICAKICAgICAgICBhbHQgSW5zdWZmaWNpZW50IEZ1bmRzCiAgICAgICAgICAgIFJlZGlzLS0-PkF1dGg6IEZsb2F0OiAtMTUuMDAKICAgICAgICAgICAgQXV0aC0-PlJlZGlzOiBJTkNSQllGTE9BVCAoUm9sbGJhY2sgRGVkdWN0aW9uKQogICAgICAgICAgICBBdXRoLT4-S2Fma2E6IFB1Ymxpc2ggaW50ZXJuYWwtYWxlcnQtdG9waWMKICAgICAgICAgICAgS2Fma2EtPj5Ob3RpZjogQ29uc3VtZXMgQWxlcnQgRXZlbnQKICAgICAgICAgICAgTm90aWYtPj5PcHM6IFNlbmRzIFNNVFAgRW1haWwgKFN1cHBvcnQgQWxlcnQpCiAgICAgICAgICAgIEF1dGgtLT4-VGVybWluYWw6IEhUVFAgNDAwIEJhZCBSZXF1ZXN0CiAgICAgICAgICAgIAogICAgICAgICAgICBOb3RlIHJpZ2h0IG9mIE9wczogUG9zdC1BbGVydCBSZXNvbHV0aW9uCiAgICAgICAgICAgIE9wcy0-PkVtcGxveWVlOiBFbWFpbHMgVXNlcjogIlBsZWFzZSBhc2sgZm9yIGJ1ZGdldCBpbmNyZWFzZSIKICAgICAgICBlbHNlIFN1ZmZpY2llbnQgRnVuZHMKICAgICAgICAgICAgUmVkaXMtLT4-QXV0aDogRmxvYXQ6IDM1NS4wMAogICAgICAgICAgICBBdXRoLT4-S2Fma2E6IFB1Ymxpc2ggYXV0aC1hcHByb3ZlZC10b3BpYwogICAgICAgICAgICBBdXRoLS0-PlRlcm1pbmFsOiBIVFRQIDIwMCBPSyAoQXBwcm92ZWQhKQogICAgICAgIGVuZAogICAgZW5kCiAgICBkZWFjdGl2YXRlIEF1dGgK" alt="Transaction Sequence" />
+        </div>
+
+        <h2>Phase 1: The Fraud Gauntlet & Compliance Alerting</h2>
+        <p>Before any money is touched, the transaction must pass strict Anti-Money Laundering (AML) checks. This happens in memory within microseconds.</p>
+        
+        <div class="step-box">
+            <h4>Step 1-2: The Webhook & Initial Routing</h4>
+            <p>The sequence begins when an employee swipes a physical or virtual card. The terminal transmits the 16-digit PAN to the acquiring bank, which bounces to Visa. Because we own the BIN (Bank Identification Number), Visa forwards a strict HTTP <code>POST /api/network/swipe</code> webhook to our Auth Engine.</p>
+        </div>
+
+        <div class="step-box">
+            <h4>Step 3-6: The MCC Compliance Alert</h4>
+            <p>The Auth Engine inspects the Merchant Category Code (MCC). If the employee is trying to buy chips at a Casino, the Auth Engine instantly rejects the transaction with an HTTP 403. Simultaneously, it fires an <code>internal-alert-topic</code> payload to Kafka.</p>
+        </div>
+
+        <div class="step-box">
+            <h4>Step 7-8: Human Ops Resolution (The Kill Switch)</h4>
+            <p>The Notification Service consumes the Kafka event and sends an urgent email to the Risk Officer. The Human Officer logs into the internal dashboard and hits the <code>POST /freeze</code> endpoint. The Identity Service reaches into Redis and executes a <code>DEL</code> command on the card, permanently destroying its routing data so it can never be swiped again.</p>
+        </div>
+
+        <h2>Phase 2: Liquidity Check & Double-Spend Prevention</h2>
+        <p>If the merchant is legitimate, the system must ensure the employee has enough allocated budget, guaranteeing we do not create negative balances or double-spend scenarios.</p>
+
+        <div class="step-box">
+            <h4>Step 11-13: Atomic Balance Deduction</h4>
+            <p>The Auth Engine hits Redis with a <code>DECRBYFLOAT</code> command. This is critical. Because Redis operates on a single-threaded event loop, this command subtracts the swipe amount from the wallet balance <strong>atomically</strong>, preventing two simultaneous swipes from stealing money.</p>
+        </div>
+
+        <div class="step-box">
+            <h4>Step 14-19: Insufficient Funds & Rollback</h4>
+            <p>If the result of <code>DECRBYFLOAT</code> is negative (e.g., -15.00), the employee does not have enough budget. The Auth Engine executes an immediate <code>INCRBYFLOAT</code> to restore the original balance (a manual rollback). It then rejects the transaction via HTTP 400.</p>
+        </div>
+
+        <div class="step-box">
+            <h4>Step 20: The Frictionless Support Loop</h4>
+            <p>Rather than waiting for the employee to call and yell at Support, the system drops a Kafka alert to the Support Desk. The Human Ops team proactively emails the employee, advising them to ask their founder for a budget increase.</p>
+        </div>
+
+        <h2>Phase 3: Final Execution & Eventual Consistency</h2>
+        
+        <div class="step-box">
+            <h4>Step 22-25: Asynchronous Settlement</h4>
+            <p>If the balance check succeeded (e.g., leaving a positive balance of $355.00), the Auth Engine has done its job. It drops an <code>auth-approved-topic</code> event onto the Kafka Bus and replies HTTP 200 OK to Visa.</p>
+            <p>Because it used a "Fire and Forget" event, it achieved its 200ms SLA constraint. The heavy database operations (saving to Postgres) are entirely offloaded to the Ledger Service, which consumes the event asynchronously whenever it is ready.</p>
+        </div>
+    </div>
+</body>
+</html>

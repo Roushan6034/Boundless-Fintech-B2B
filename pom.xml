@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.boundless</groupId>
+    <artifactId>boundless-fintech-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    
+    <!-- This tells Maven that this is a parent folder containing other projects -->
+    <packaging>pom</packaging>
+
+    <name>Boundless FinTech Platform</name>
+    <description>Parent POM for all FinTech microservices</description>
+
+    <!-- By listing the modules here, IntelliJ will automatically detect all of them! -->
+    <modules>
+        <module>api-gateway-service</module>
+        <module>auth-engine-service</module>
+        <module>card-identity-service</module>
+        <module>ledger-service</module>
+        <module>notification-service</module>
+    </modules>
+
+</project>

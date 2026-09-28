@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Boundless FinTech - Volume I: System Design</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; line-height: 1.7; color: #334155; background-color: #f8fafc; margin: 0; padding: 0; }
+        .container { max-width: 1000px; margin: 40px auto; padding: 60px 80px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        h1 { color: #0f172a; font-size: 2.8rem; border-bottom: 5px solid #2563eb; padding-bottom: 15px; margin-bottom: 10px; text-align: center; }
+        h2 { color: #1e293b; font-size: 2rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-top: 60px; text-transform: uppercase; }
+        h3 { color: #2563eb; font-size: 1.5rem; margin-top: 40px; }
+        p, li { font-size: 1.15rem; margin-bottom: 18px; color: #475569; }
+        code { background-color: #f1f5f9; color: #b91c1c; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-size: 0.9em; font-weight: 600; }
+        .header-bar { background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%); height: 16px; width: 100%; position: fixed; top: 0; left: 0; z-index: 1000; }
+        .diagram-container { display: flex; justify-content: center; margin: 40px 0; padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .diagram-container img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="header-bar"></div>
+    <div class="container">
+        <h1>Boundless FinTech Platform: The Definitive Master Architecture Guide</h1>
+
+        <div style="background-color: #f8fafc; padding: 25px 40px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 50px;">
+            <h3 style="margin-top: 0; color: #0f172a; font-size: 1.5rem; margin-bottom: 15px;">Table of Contents</h3>
+            <ul style="line-height: 2; font-size: 1.1rem; padding-left: 20px;">
+                <li><a href="#chapter-1" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 1: The Business Model &amp; Domain Entities</a></li>
+<li><a href="#chapter-2" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 2: Multi-Tenancy &amp; Row-Level Security</a></li>
+<li><a href="#chapter-3" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 3: The Internal Ops Triad</a></li>
+<li><a href="#chapter-4" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 4: The Fast Path (The 200ms Auth Engine)</a></li>
+<li><a href="#chapter-5" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 5: The Slow Path (Ledger &amp; SLA Compliance)</a></li>
+<li><a href="#chapter-6" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 6: Kafka Topic Dictionary &amp; Data Payloads</a></li>
+<li><a href="#chapter-7" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 7: Architecture Diagrams & Data Flow Control</a></li>
+<li><a href="#chapter-8" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 8: Implemented Fault Tolerance & Internal Ops</a></li>
+<li><a href="#chapter-9" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 9: Implemented Alert Resolution (Notification Service)</a></li>
+                <li><a href="#tech-stack" style="color: #3b82f6; text-decoration: none; font-weight: 600;">Technology Stack</a></li>
+                <li><a href="#core-features" style="color: #3b82f6; text-decoration: none; font-weight: 600;">Core Platform Features & Capabilities</a></li>
+                <li><a href="#chapter-10" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 10: Developer Environment & Deployment</a></li>
+                <li><a href="#chapter-11" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 11: Observability & Distributed Tracing</a></li>
+                <li><a href="#chapter-12" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 12: The Saga Pattern (Distributed Transactions)</a></li>
+                <li><a href="#chapter-13" style="color: #10b981; text-decoration: none; font-weight: 800;">CHAPTER 13: Enterprise Features (V2 Expansion)</a></li>
+                <li><a href="#chapter-14" style="color: #10b981; text-decoration: none; font-weight: 800;">CHAPTER 14: API Gateway Security (Authentication & Authorization)</a></li>
+            </ul>
+        </div>
+
+<p>Welcome to the exhaustive, minute-by-minute architectural masterclass for the Boundless FinTech Platform. This document leaves no stone unturned. It covers every edge case, every database relation, every Kafka topic, and every sub-200ms optimization required to run a massive B2B Corporate Spend Management system.</p>
+<hr>
+
+
+
+<h2 id="tech-stack">Technology Stack</h2>
+<p>Boundless is built on a modern, enterprise-grade Java stack designed for high throughput, strict security, and horizontal scalability.</p>
+
+<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; margin-bottom: 40px;">
+    <span style="background-color: #eff6ff; color: #1e3a8a; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid #bfdbfe;">☕ Java 17</span>
+    <span style="background-color: #f0fdf4; color: #14532d; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid #bbf7d0;">🍃 Spring Boot 3</span>
+    <span style="background-color: #faf5ff; color: #581c87; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid #e9d5ff;">🚀 Apache Kafka (Event Bus)</span>
+    <span style="background-color: #fef2f2; color: #7f1d1d; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid #fecaca;">🔴 Redis (O(1) Data Grid)</span>
+    <span style="background-color: #f0f9ff; color: #0c4a6e; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid #bae6fd;">🐘 PostgreSQL (Ledger)</span>
+    <span style="background-color: #fffbeb; color: #78350f; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid #fde68a;">🪣 LocalStack S3 (Receipt Storage)</span>
+    <span style="background-color: #fdf4ff; color: #701a75; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid #fbcfe8;">🔐 Spring Security & JWT</span>
+    <span style="background-color: #f8fafc; color: #0f172a; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 1px solid #cbd5e1;">📄 Swagger / OpenAPI 3</span>
+</div>
+
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+<h2 id="core-features">Core Platform Features & Capabilities</h2>
+<p>Boundless FinTech isn't just a payment gateway; it is a comprehensive corporate spend management platform. The underlying Java architecture natively powers the following product features:</p>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+    
+    <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.2rem;">1. Instant Virtual Card Issuance</h4>
+        <p style="font-size: 1.05rem; margin-bottom: 0;">Company Administrators can instantly provision virtual PANs for their employees. This includes standard multi-use cards and <strong>Single-Use Burner Cards</strong> that automatically self-destruct and lock themselves in the database after their first successful transaction, completely eliminating the risk of hidden recurring subscription traps.</p>
+    </div>
+
+    <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.2rem;">2. The 200ms Fraud Gauntlet</h4>
+        <p style="font-size: 1.05rem; margin-bottom: 0;">Every card swipe is intercepted in real-time. Before deducting a single cent, the Auth Engine checks the Merchant Category Code (instantly blocking casinos or crypto exchanges), enforces daily swipe velocity limits, and freezes the card if someone attempts to brute-force the CVV code.</p>
+    </div>
+
+    <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.2rem;">3. Automated Receipt Chasing</h4>
+        <p style="font-size: 1.05rem; margin-bottom: 0;">Employees hate doing expenses, so Boundless automates compliance. If an employee swipes a card, a 24-hour SLA timer begins. If they fail to upload a photo of the physical receipt to our AWS S3 Bucket within 24 hours, the Ledger Service automatically triggers a freeze event, locking their card until they upload the receipt.</p>
+    </div>
+
+    <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.2rem;">4. Multi-Tenant Strict Isolation</h4>
+        <p style="font-size: 1.05rem; margin-bottom: 0;">The entire architecture is designed for B2B SaaS. Using Cryptographic JWT Claims and Row-Level Security, the system guarantees mathematical isolation. A manager at Acme Corp can only view Acme Corp wallets, ensuring zero cross-contamination of financial data between clients.</p>
+    </div>
+
+    <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
+        <h4 style="margin-top: 0; color: #1e40af; font-size: 1.2rem;">5. Intelligent Alert Routing & Frictionless Support</h4>
+        <p style="font-size: 1.05rem; margin-bottom: 0;">When a transaction fails, it doesn't fail silently. If a card bounces due to Insufficient Funds, the system proactively routes an alert to the Support Desk, triggering an automated email to the employee advising them to request a budget increase. If a card fails due to restricted merchants, it routes the alert directly to the Compliance Team for human review.</p>
+    </div>
+
+</div>
+
+<h2 id="chapter-1">CHAPTER 1: The Business Model &amp; Domain Entities</h2>
+<p>Boundless is not a consumer bank. It is a <strong>Business-to-Business (B2B) Spend Management Platform</strong>. Our clients are startup founders and corporate treasurers (e.g., Acme Corp) who need to issue corporate credit cards to their employees for software subscriptions, travel, and expenses.</p>
+<p>To support this, the database is strictly modeled around corporate hierarchies:</p>
+<h3>1.1 The Company Entity</h3>
+<p>Before anyone can use the platform, the legal entity must be verified via KYB (Know Your Business).</p>
+<ul>
+<li><strong>Attributes</strong>: <code>companyName</code>, <code>einNumber</code> (Employer Identification Number), and <code>kybStatus</code> (PENDING, APPROVED, FROZEN).</li>
+<li><strong>The Freeze Mechanism</strong>: If the Risk &amp; Compliance team detects money laundering, they flip the company&#39;s <code>kybStatus</code> to FROZEN. This instantly cascades, freezing every Master Wallet, every Employee Wallet, and every Virtual Card associated with that Tenant.</li>
+</ul>
+<h3>1.2 The Master Wallet</h3>
+<p>This is the lifeblood of the tenant. Boundless does not extend credit. We are a pre-paid platform.</p>
+<ul>
+<li><strong>The Flow</strong>: Acme Corp wires $100,000 of real USD from their Chase Bank account to Boundless&#39;s master treasury account.</li>
+<li><strong>The Minting</strong>: The Boundless <code>ROLE_PLATFORM_TREASURY</code> officer intercepts that wire, logs into the Internal Ops portal, and mints $100,000 of digital liquidity into Acme Corp&#39;s <code>MasterWallet</code>.</li>
+<li><strong>Constraint</strong>: The <code>MasterWallet</code> is a singular pool. Employees cannot swipe directly against it.</li>
+</ul>
+<h3>1.3 The Employee Wallet</h3>
+<p>To allow an employee to spend money, the Company Admin must carve out a specific budget.</p>
+<ul>
+<li><strong>The Allocation</strong>: If a founder wants to give an employee a $500 travel budget, the system atomically deducts $500 from the <code>MasterWallet</code> and moves it into the Employee&#39;s <code>Wallet</code>.</li>
+<li><strong>Isolation</strong>: An employee can have multiple wallets (e.g., &quot;Software Subscriptions&quot;, &quot;Travel&quot;, &quot;Per Diems&quot;), each with its own isolated balance.</li>
+</ul>
+<h3>1.4 The Virtual Card (The PAN)</h3>
+<p>The virtual card is the 16-digit Primary Account Number (PAN) that the employee actually types into Amazon or hands to a barista.</p>
+<ul>
+<li><strong>The Binding</strong>: Every card is strictly bound to exactly one <code>Wallet</code> (Foreign Key: <code>wallet_id</code>).</li>
+<li><strong>Card Types</strong>: Cards can be <code>STANDARD</code> (multi-use, recurring) or <code>BURNER</code> (single-use, auto-destructing).</li>
+</ul>
+<hr>
+<h2 id="chapter-2">CHAPTER 2: Multi-Tenancy &amp; Row-Level Security</h2>
+<p>Because Boundless hosts multiple competitor companies (Acme Corp and Globex) in the exact same PostgreSQL database, data leakage is catastrophic. We prevent this using strict Row-Level Security (RLS) enforced at the application layer.</p>
+<h3>2.1 The Identity Binding</h3>
+<p>Every <code>User</code> in the database has a <code>companyName</code> column. This is the tenant identifier.
+When a user logs in, the <code>JwtService</code> embeds their <code>companyName</code> inside the cryptographically signed JWT payload.</p>
+<h3>2.2 Endpoint Isolation</h3>
+<p>When the Acme Corp Admin hits the <code>GET /api/company-admin/employees</code> endpoint, the <code>CompanyAdminController</code> extracts the <code>companyName</code> directly from the JWT Context. 
+It executes: <code>SELECT * FROM users WHERE companyName = &#39;Acme Corp&#39;</code>.
+It is mathematically impossible for the Acme Admin to query or view employees belonging to Globex, because the <code>WHERE</code> clause is hardcoded to their authenticated JWT identity.</p>
+<h3>2.3 Financial Isolation</h3>
+<p>When the Acme Corp Admin tries to issue a card to an employee <code>UUID</code>:</p>
+<ol>
+<li>The controller looks up the target Employee.</li>
+<li>It compares <code>Employee.companyName</code> against <code>Admin.companyName</code>.</li>
+<li>If they do not match exactly, the system throws a <code>SecurityException: Cannot fund an employee outside your company!</code> and drops a proactive alert to the internal security team.</li>
+</ol>
+<hr>
+<h2 id="chapter-3">CHAPTER 3: The Internal Ops Triad</h2>
+<p>To prevent massive internal fraud, Boundless fractures platform administration into three distinct teams. No single employee has &quot;God Mode&quot;.</p>
+
+<div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #1e40af;">🔑 Pre-Seeded Default Accounts</h3>
+    <p>The system automatically seeds the following accounts in the database on startup. You can use these to test the Platform Ops APIs right away:</p>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95rem;">
+        <thead>
+            <tr style="background-color: #1e3a8a; color: white;">
+                <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Team / Role</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Email (Login ID)</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Password</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>Customer Success</strong> (<code>ROLE_PLATFORM_SUPPORT</code>)</td>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>support@boundless.com</code></td>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>Password123!</code></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>Risk & Compliance</strong> (<code>ROLE_PLATFORM_COMPLIANCE</code>)</td>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>compliance@boundless.com</code></td>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>Password123!</code></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><strong>Treasury Manager</strong> (<code>ROLE_PLATFORM_TREASURY</code>)</td>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>treasury@boundless.com</code></td>
+                <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>Password123!</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="margin-bottom: 0; font-size: 0.85em; color: #64748b; margin-top: 10px;"><em>Note: Company Admins and Employees are not pre-seeded; they must be created dynamically via the <code>/api/companies/register</code> flow.</em></p>
+</div>
+<h3>3.1 The Treasury Team (<code>ROLE_PLATFORM_TREASURY</code>)</h3>
+<ul>
+<li><strong>Mandate</strong>: Liquidity Management.</li>
+<li><strong>Power</strong>: They are the only team with access to <code>POST /api/internal-ops/master-wallet/fund</code>. They bridge the gap between the real banking world and the digital database.</li>
+<li><strong>Alerts</strong>: If a founder tries to allocate budget to an employee but the Master Wallet is empty, the Treasury team receives an automated Kafka alert to proactively email the founder asking for a wire transfer.</li>
+</ul>
+<h3>3.2 Risk &amp; Compliance (<code>ROLE_PLATFORM_COMPLIANCE</code>)</h3>
+<ul>
+<li><strong>Mandate</strong>: Anti-Money Laundering (AML) &amp; Fraud Prevention.</li>
+<li><strong>Power</strong>: They have the ability to hit <code>/api/internal-ops/companies/{name}/freeze</code>.</li>
+<li><strong>Alerts</strong>: If the Auth Engine detects a Brute Force CVV attack, or an employee trying to swipe at an illegal casino, it drops an alert. The Compliance team is notified instantly and can lock down the tenant.</li>
+</ul>
+<h3>3.3 Customer Success (<code>ROLE_PLATFORM_SUPPORT</code>)</h3>
+<ul>
+<li><strong>Mandate</strong>: Client Retention &amp; Troubleshooting.</li>
+<li><strong>Power</strong>: They have Read-Only access across the platform (<code>GET /overview</code>). They cannot move money or freeze accounts.</li>
+<li><strong>Alerts</strong>: If an employee is declined at Starbucks for &quot;Insufficient Funds&quot;, Support gets the alert. When the employee calls to complain, Support already has the dashboard open and can explain that the founder hasn&#39;t allocated enough budget.</li>
+</ul>
+
+<h3>The Difference Between Budget Allocation & External Spending</h3>
+<p>There is a strict architectural difference between <strong>Internal Allocation</strong> and <strong>External Spending</strong>:</p>
+<ul style="line-height: 1.8;">
+    <li><strong>Internal Allocation (Day 0):</strong> When a Company Admin creates an Employee Wallet for $1,000, no real money leaves the platform. The system simply deducts $1,000 from their Master Wallet and assigns it to the Employee Wallet in Postgres. The money is still safely in our partner bank.</li>
+    <li style="margin-bottom: 20px;"><strong>External Spending:</strong> When an employee actually swipes their card, no physical money moves at that exact second. It happens in two distinct phases:
+        <div style="background-color: #f8fafc; padding: 20px; border-left: 4px solid #3b82f6; margin-top: 15px; border-radius: 0 8px 8px 0;">
+            <h4 style="margin-top: 0; color: #1e3a8a;">Phase 1: The Digital Hold (Day 1 - What our code does)</h4>
+            <p style="margin-bottom: 15px;">When Bob buys a $5 coffee at Starbucks, Starbucks' card reader asks Visa, <em>"Is Bob good for this?"</em> Visa asks our Auth Engine. Our Auth Engine checks Redis, subtracts $5 from Bob's digital balance, and tells Visa, <em>"Yes, approved!"</em></p>
+            <p style="margin-bottom: 25px;">At this exact moment, <strong>no real money has moved</strong>. Our system just put a digital "hold" on the $5 so Bob can't spend it again. Starbucks gives Bob the coffee based on our digital promise to pay them later.</p>
+
+            <h4 style="margin-top: 0; color: #1e3a8a;">Phase 2: The Real Money Move (Day 3 - Clearing & Settlement)</h4>
+            <p style="margin-bottom: 10px;">At the end of the day, Starbucks tells Visa, <em>"Okay, it's time to pay up for all the coffees sold today."</em></p>
+            <ul style="margin-bottom: 15px;">
+                <li><strong>The Settlement File:</strong> A few days later, Visa generates a massive spreadsheet (a "Settlement File") listing all the approved transactions and sends it to our real-world partner bank (e.g., Sutton Bank, where we hold the physical corporate cash).</li>
+                <li><strong>The Bank Wire:</strong> Our partner bank looks at the spreadsheet, takes $5 of real physical USD out of our vault, and wires it to Visa's bank. Visa then wires it to Starbucks' bank.</li>
+                <li><strong>The Reconciliation:</strong> Our Boundless Ledger Service downloads a digital copy of that spreadsheet, matches it against our PostgreSQL database, and changes the transaction status from <code>PENDING</code> to <code>SETTLED</code>.</li>
+            </ul>
+            <p style="margin-bottom: 0; font-style: italic; color: #475569;">In short: our Java code manages the digital rules and balances to prevent overspending in milliseconds, but the real physical money is moved asynchronously by the banks reading massive spreadsheets days later.</p>
+        </div>
+    </li>
+</ul>
+
+<hr>
+<h2 id="chapter-4">CHAPTER 4: The Fast Path (The 200ms Auth Engine)</h2>
+
+<h3>Virtual Card Issuance & Expiry</h3>
+<p>When a Company Admin creates a wallet, a 16-digit Virtual Card is instantly generated. To comply with standard card network rules, every card is automatically assigned an <strong>Expiry Date exactly 3 years from the date of issuance</strong> alongside a 3-digit CVV.</p>
+
+<p>The <code>auth-engine-service</code> is the crown jewel of the platform. When a card is swiped at a terminal, Visa fires a webhook to <code>POST /api/network/swipe</code>. Visa requires a response in under 200 milliseconds. If the system takes 201ms, Visa drops the connection and declines the card.</p>
+<p>To achieve this, the Auth Engine <strong>completely ignores PostgreSQL</strong>. Disk I/O is too slow. It relies entirely on a pre-warmed Redis In-Memory Data Grid.</p>
+<h3>4.1 The Redis Synchronization</h3>
+<p>When the Identity Service issues a card, it doesn&#39;t just save it to Postgres. It pushes critical O(1) routing data to Redis:</p>
+<ul>
+<li><code>SET card:{pan}:wallet {wallet_id}</code></li>
+<li><code>SET wallet:{wallet_id}:balance 500.00</code></li>
+<li><code>SET card:{pan}:type STANDARD</code></li>
+</ul>
+<h3>4.2 The Chain of Responsibility Gauntlet</h3>
+<p>When the Visa webhook arrives, the <code>FraudEngine</code> class runs it through a gauntlet of Java rules. If any rule fails, the chain breaks and a 400 Bad Request is returned.</p>
+<ol>
+<li><strong>Velocity Rule</strong>: The system calls <code>INCR velocity:{pan}:{YYYY-MM-DD}</code> in Redis. If the returned integer is &gt; 10, the card has been swiped too many times today. Decline.</li>
+<li><strong>Merchant Category Code (MCC) Rule</strong>: The system checks the <code>merchantName</code> string against a highly restricted regex blacklist. &quot;Las Vegas Casino&quot;, &quot;Local Dive Bar&quot;, and &quot;Binance Crypto&quot; trigger an instant decline and a Kafka alert to Compliance.</li>
+<li><strong>Brute Force Rule</strong>: If the CVV provided by Visa doesn&#39;t match, <code>INCR cvv_failures:{pan}</code> is called. If the hacker hits 3 failures, the card is locked for 24 hours. Decline.</li>
+<li><strong>The Balance Rule (The Core Logic)</strong>:<ul>
+<li>The system looks up the wallet: <code>GET card:{pan}:wallet</code>.</li>
+<li>It executes an atomic <code>DECRBYFLOAT wallet:{wallet_id}:balance {amount}</code>.</li>
+<li>If the resulting balance is negative (e.g., -5.00), it immediately reverses it (<code>INCRBYFLOAT</code>) and throws an Insufficient Funds exception.</li>
+<li>If positive, the transaction is approved!</li>
+</ul>
+</li>
+</ol>
+<h3>4.3 The Single-Use Burner Sequence</h3>
+<p>If the card passes the gauntlet, the Auth Engine checks <code>GET card:{pan}:type</code>.
+If the string equals <code>BURNER</code>, the Auth Engine executes a self-destruct.
+It calls <code>DEL card:{pan}:wallet</code> and <code>DEL card:{pan}:status</code>.
+The card ceases to exist in the Fast Path memory. If a hacker steals the number and tries to use it 5 seconds later, the Auth Engine will return &quot;Card Not Found&quot;.</p>
+<hr>
+<h2 id="chapter-5">CHAPTER 5: The Slow Path (Ledger &amp; SLA Compliance)</h2>
+<p>Because the Auth Engine has no time to write to PostgreSQL or enforce corporate receipt policies, it relies on Event-Driven Architecture.
+When the Auth Engine approves a swipe, it publishes an <code>auth-approved-topic</code> string to Apache Kafka and returns 200 OK to Visa. Its job is done.</p>
+<h3>5.1 Asynchronous Settlement</h3>
+<p>The <code>ledger-service</code> listens to <code>auth-approved-topic</code>. When it consumes the event, it parses the JSON and executes a heavy <code>INSERT INTO transaction_ledger</code> SQL statement. This permanently records the financial history for tax auditors.</p>
+<h3>5.2 The RBI OTP Mandate</h3>
+<p>If the swipe amount is massive (e.g., &gt; ₹5,000), the Reserve Bank of India (RBI) requires 2-Factor Authentication.</p>
+<ul>
+<li>The Auth Engine halts the transaction, returning <code>202 PENDING_OTP</code> to Visa.</li>
+<li>It generates a 6-digit code, saves <code>SET otp:{pan} 123456 EX 300</code> in Redis.</li>
+<li>It drops an <code>otp-email-topic</code> Kafka event.</li>
+<li>The Notification service emails the code to the employee&#39;s phone.</li>
+<li>The transaction is frozen in mid-air until the employee proves their identity.</li>
+</ul>
+<h3>5.3 The 24-Hour Receipt SLA (The Enforcer)</h3>
+<p>Corporate tax law requires physical receipts for large purchases. Boundless automates this entirely.</p>
+<ol>
+<li><strong>The Warning</strong>: The moment a $50+ transaction settles, the Ledger Service drops a <code>receipt-reminder-topic</code> event. The employee immediately gets an email: &quot;Please upload your receipt within 24 hours.&quot;</li>
+<li><strong>The Cron Job</strong>: Inside the Ledger Service is a Spring <code>@Scheduled</code> method running every 5 minutes.<ul>
+<li>It queries: <code>SELECT * FROM transaction_ledger WHERE amount &gt; 50 AND receiptUploaded = false AND created_at &lt; (NOW - 24 HOURS)</code>.</li>
+<li>If it finds a guilty transaction, it drops a <code>card-freeze-topic</code> event to Kafka.</li>
+</ul>
+</li>
+<li><strong>The Freeze</strong>: The Identity Service consumes the freeze event. It executes <code>SET card:{pan}:status FROZEN</code> in Redis. <ul>
+<li>Result: The employee is stranded at a restaurant and their card is declined until they do their expense reports!</li>
+</ul>
+</li>
+</ol>
+<h3>5.4 S3 Object Storage Unfreezing</h3>
+<p>To unlock their card, the employee must upload an image.</p>
+<ol>
+<li>They hit <code>POST /api/transactions/{id}/receipt</code> with a Multipart File.</li>
+<li>The Ledger Service connects to <strong>MinIO (AWS S3 Compatible Storage)</strong> and streams the image bytes into the <code>boundless-receipts</code> bucket.</li>
+<li>It saves the public <code>s3Url</code> in Postgres and sets <code>receiptUploaded = true</code>.</li>
+<li>It fires a <code>card-unfreeze-topic</code> Kafka event.</li>
+<li>The Identity Service hears it and calls <code>DEL card:{pan}:status</code> in Redis. The card is instantly active again!</li>
+</ol>
+<hr>
+<h2 id="chapter-6">CHAPTER 6: Kafka Topic Dictionary &amp; Data Payloads</h2>
+<p>The entire nervous system of the 5 microservices relies on these precise Kafka payloads:</p>
+<ol>
+<li><strong><code>auth-approved-topic</code></strong>: <code>{&quot;cardNumber&quot;:&quot;4111...&quot;, &quot;merchantName&quot;:&quot;Starbucks&quot;, &quot;amount&quot;:&quot;4.50&quot;}</code><ul>
+<li><em>Producer</em>: Auth Engine | <em>Consumer</em>: Ledger</li>
+</ul>
+</li>
+<li><strong><code>employee-onboarding-topic</code></strong>: <code>{&quot;email&quot;:&quot;john@acme.com&quot;, &quot;employeeId&quot;:&quot;EMP-123&quot;, &quot;tempPassword&quot;:&quot;...&quot;}</code><ul>
+<li><em>Producer</em>: Identity | <em>Consumer</em>: Notification</li>
+</ul>
+</li>
+<li><strong><code>otp-email-topic</code></strong>: <code>{&quot;cardNumber&quot;:&quot;4111...&quot;, &quot;otp&quot;:&quot;123456&quot;}</code><ul>
+<li><em>Producer</em>: Auth Engine | <em>Consumer</em>: Notification</li>
+</ul>
+</li>
+<li><strong><code>receipt-reminder-topic</code></strong>: <code>{&quot;cardNumber&quot;:&quot;4111...&quot;, &quot;merchantName&quot;:&quot;Delta Airlines&quot;, &quot;amount&quot;:&quot;450.00&quot;}</code><ul>
+<li><em>Producer</em>: Ledger | <em>Consumer</em>: Notification</li>
+</ul>
+</li>
+<li><strong><code>card-freeze-topic</code></strong>: <code>{&quot;cardNumber&quot;:&quot;4111...&quot;, &quot;reason&quot;:&quot;Missed 24-hour receipt SLA&quot;}</code><ul>
+<li><em>Producer</em>: Ledger (Cron) | <em>Consumer</em>: Identity</li>
+</ul>
+</li>
+<li><strong><code>card-unfreeze-topic</code></strong>: <code>&quot;4111...&quot;</code> (Just the string PAN)<ul>
+<li><em>Producer</em>: Ledger (S3 Upload) | <em>Consumer</em>: Identity</li>
+</ul>
+</li>
+<li><strong><code>card-closed-topic</code></strong>: <code>&quot;4111...&quot;</code> (Just the string PAN)<ul>
+<li><em>Producer</em>: Auth Engine (Burner sequence) | <em>Consumer</em>: Identity</li>
+</ul>
+</li>
+<li><strong><code>internal-alert-topic</code></strong>: <code>{&quot;role&quot;:&quot;ROLE_PLATFORM_COMPLIANCE&quot;, &quot;targetEmail&quot;:&quot;sidharth6034@gmail.com&quot;, &quot;alert&quot;:&quot;SECURITY INCIDENT: Swipe declined for Binance Crypto.&quot;}</code><ul>
+<li><em>Producer</em>: Auth/Identity | <em>Consumer</em>: Notification</li>
+</ul>
+</li>
+</ol>
+<hr>
+        <hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+        <h2 id="chapter-7">CHAPTER 7: Architecture Diagrams & Data Flow Control</h2>
+        <p>To truly understand how Boundless prevents data leakage and hits sub-200ms speeds, we must map the control flow and data flow visually.</p>
+        
+        <h3>7.1 Global System Architecture</h3>
+        <p>This diagram illustrates the macro-level boundaries. Notice how the Fast Path (Red) is completely isolated from the Slow Path (Blue).</p>
+        <div class="diagram-container"><img src="https://mermaid.ink/svg/Zmxvd2NoYXJ0IFRECiAgICBzdWJncmFwaCBFeHRlcm5hbCBbRXh0ZXJuYWwgTmV0d29ya10KICAgICAgICBWSVNBWyJWaXNhIC8gTWFzdGVyY2FyZDxici8-PGJyLz5TZW5kcyBQT1NUIC9zd2lwZSB3ZWJob29rPGJyLz5SZXF1aXJlcyBzdWItMjAwbXMgcmVzcG9uc2UgU0xBIl0KICAgICAgICBXRUJbIldlYiBEYXNoYm9hcmQ8YnIvPjxici8-Rm91bmRlcnMgJiBFbXBsb3llZXM8YnIvPm1hbmFnZSB3YWxsZXRzICYgdXBsb2FkIHJlY2VpcHRzIl0KICAgIGVuZAoKICAgIEdXWyJBUEkgR2F0ZXdheSAoOjgwODApPGJyLz48YnIvPkZyb250IGRvb3IgZm9yIGFsbCBIVFRQIHRyYWZmaWM8YnIvPlZhbGlkYXRlcyBpbml0aWFsIEpXVCBwcmVzZW5jZSJdCiAgICAKICAgIHN1YmdyYXBoIEFkbWluUGxhbmUgW1RoZSBBZG1pbmlzdHJhdGl2ZSBDb250cm9sIFBsYW5lXQogICAgICAgIElEWyJDYXJkIElkZW50aXR5IFNlcnZpY2UgKDo4MDgxKTxici8-PGJyLz4xLiBLWUIgQ29tcGFueSBPbmJvYXJkaW5nPGJyLz4yLiBFbmZvcmNlcyBSb3ctTGV2ZWwgU2VjdXJpdHk8YnIvPjMuIElzc3VlcyBWaXJ0dWFsIENhcmRzIChQQU5zKSJdCiAgICAgICAgUEdbKCJQb3N0Z3JlU1FMIERhdGFiYXNlPGJyLz48YnIvPlBlcm1hbmVudCBTb3VyY2Ugb2YgVHJ1dGg8YnIvPk11bHRpLXRlbmFudCBzdHJpY3QgaXNvbGF0aW9uIildCiAgICBlbmQKCiAgICBzdWJncmFwaCBGYXN0UGF0aCBbVGhlIEZhc3QgUGF0aF0KICAgICAgICBBVVRIWyJBdXRoIEVuZ2luZSBTZXJ2aWNlICg6ODA4Mik8YnIvPjxici8-MS4gRXhlY3V0ZXMgRnJhdWQgR2F1bnRsZXQ8YnIvPjIuIEF0b21pY2FsbHkgZGVkdWN0cyB3YWxsZXQgYmFsYW5jZXM8YnIvPjMuIERlc3Ryb3lzIHNpbmdsZS11c2UgYnVybmVyIGNhcmRzIl0KICAgICAgICBSRURJU1soIlJlZGlzIEluLU1lbW9yeSBHcmlkPGJyLz48YnIvPk8oMSkgRGF0YSBsb29rdXBzPGJyLz5FbGltaW5hdGVzIHNsb3cgZGlzayBJL08gbGF0ZW5jeSIpXQogICAgZW5kCgogICAgc3ViZ3JhcGggU2xvd1BhdGggW0FzeW5jaHJvbm91cyBTZXR0bGVtZW50XQogICAgICAgIEtBRktBeyJBcGFjaGUgS2Fma2EgRXZlbnQgQnVzPGJyLz48YnIvPkRlY291cGxlcyBzeXN0ZW0gYXJjaGl0ZWN0dXJlPGJyLz5HdWFyYW50ZWVzIG1lc3NhZ2Ugb3JkZXJpbmcifQogICAgICAgIExFREdFUlsiTGVkZ2VyIFNlcnZpY2UgKDo4MDgzKTxici8-PGJyLz4xLiBSZWNvcmRzIHRyYW5zYWN0aW9ucyB0byBEQjxici8-Mi4gRW5mb3JjZXMgMjQtSG91ciBSZWNlaXB0IFNMQXMiXQogICAgICAgIE5PVElGWyJOb3RpZmljYXRpb24gU2VydmljZSAoOjgwODQpPGJyLz48YnIvPjEuIERpc3BhdGNoZXMgUkJJIE9UUCBFbWFpbHM8YnIvPjIuIEludGVybmFsIE9wcyBQcm9hY3RpdmUgQWxlcnRzIl0KICAgICAgICBTM1soIk1pbklPIC8gQVdTIFMzPGJyLz48YnIvPlN0b3JlcyByZWNlaXB0IEpQRUdzICYgUERGczxici8-S2VlcHMgUG9zdGdyZXMgREIgbGlnaHR3ZWlnaHQiKV0KICAgIGVuZAoKICAgIFdFQiAtLT58SFRUUCBSZXF1ZXN0c3wgR1cKICAgIEdXIC0tPnxGb3J3YXJkcyBDb250ZXh0fCBJRAogICAgSUQgPC0tPnxTUUwgUXVlcmllc3wgUEcKICAgIElEIC0tICJTeW5jcyBSb3V0aW5nPGJyLz5EYXRhIHRvIENhY2hlIiAtLT4gUkVESVMKICAgIAogICAgVklTQSAtLSAiUE9TVCAvc3dpcGUiIC0tPiBBVVRICiAgICBBVVRIIDwtLT58REVDUkJZRkxPQVR8IFJFRElTCiAgICBBVVRIIC0tICJQdWJsaXNoZXM8YnIvPmF1dGgtYXBwcm92ZWQtdG9waWMiIC0tPiBLQUZLQQogICAgCiAgICBLQUZLQSAtLSBDb25zdW1lcyAtLT4gTEVER0VSCiAgICBLQUZLQSAtLSBDb25zdW1lcyAtLT4gTk9USUYKICAgIEtBRktBIC0tIENvbnN1bWVzIC0tPiBJRAogICAgCiAgICBMRURHRVIgLS0-fElOU0VSVCBJTlRPfCBQRwogICAgTEVER0VSIC0tPnxVcGxvYWRzIE11bHRpcGFydHwgUzMKICAgIAogICAgY2xhc3NEZWYgZmFzdCBmaWxsOiNmZWUyZTIsc3Ryb2tlOiNlZjQ0NDQsc3Ryb2tlLXdpZHRoOjJweDsKICAgIGNsYXNzRGVmIHNsb3cgZmlsbDojZTBmMmZlLHN0cm9rZTojM2I4MmY2LHN0cm9rZS13aWR0aDoycHg7CiAgICBjbGFzc0RlZiBleHRlcm5hbCBmaWxsOiNmM2Y0ZjYsc3Ryb2tlOiM5Y2EzYWYsc3Ryb2tlLXdpZHRoOjJweDsKICAgIAogICAgY2xhc3MgQVVUSCxSRURJUyBmYXN0OwogICAgY2xhc3MgSUQsUEcsTEVER0VSLFMzLE5PVElGIHNsb3c7CiAgICBjbGFzcyBWSVNBLFdFQiBleHRlcm5hbDsK" alt="Global Architecture" /></div>
+        
+        <h3>7.2 The 200ms Transaction Sequence (Data Flow)</h3>
+        <p>When an employee swipes their card, the data flow is strictly controlled to ensure atomic deductions and absolute speed.</p>
+        <div class="diagram-container"><img src="https://mermaid.ink/svg/c2VxdWVuY2VEaWFncmFtCiAgICBhdXRvbnVtYmVyCiAgICBhY3RvciBFbXBsb3llZQogICAgcGFydGljaXBhbnQgVGVybWluYWwgYXMgUG9pbnQgb2YgU2FsZQogICAgcGFydGljaXBhbnQgQXV0aCBhcyBBdXRoIEVuZ2luZQogICAgcGFydGljaXBhbnQgUmVkaXMgYXMgUmVkaXMgR3JpZAogICAgcGFydGljaXBhbnQgS2Fma2EgYXMgQXBhY2hlIEthZmthCiAgICBwYXJ0aWNpcGFudCBOb3RpZiBhcyBOb3RpZmljYXRpb24gU2VydmljZQogICAgYWN0b3IgT3BzIGFzIEludGVybmFsIE9wcyAoSHVtYW4pCiAgICBwYXJ0aWNpcGFudCBJRCBhcyBJZGVudGl0eSBTZXJ2aWNlCgogICAgRW1wbG95ZWUtPj5UZXJtaW5hbDogU3dpcGVzIFZpcnR1YWwgQ2FyZAogICAgVGVybWluYWwtPj5BdXRoOiBQT1NUIC9hcGkvbmV0d29yay9zd2lwZSBKU09OCiAgICAKICAgIGFjdGl2YXRlIEF1dGgKICAgIAogICAgTm90ZSByaWdodCBvZiBBdXRoOiBQaGFzZSAxOiBGcmF1ZCBHYXVudGxldAogICAgQXV0aC0-PkF1dGg6IENoZWNrIE1lcmNoYW50IENhdGVnb3J5IENvZGUgKE1DQykKICAgIGFsdCBpcyBDYXNpbm8gKFJlc3RyaWN0ZWQpCiAgICAgICAgQXV0aC0-PkthZmthOiBQdWJsaXNoIGludGVybmFsLWFsZXJ0LXRvcGljCiAgICAgICAgS2Fma2EtPj5Ob3RpZjogQ29uc3VtZXMgQWxlcnQgRXZlbnQKICAgICAgICBOb3RpZi0-Pk9wczogU2VuZHMgU01UUCBFbWFpbCAoQ29tcGxpYW5jZSBBbGVydCkKICAgICAgICBBdXRoLS0-PlRlcm1pbmFsOiBIVFRQIDQwMyBGb3JiaWRkZW4gKERlY2xpbmVkKQogICAgICAgIAogICAgICAgIE5vdGUgcmlnaHQgb2YgT3BzOiBQb3N0LUFsZXJ0IFJlc29sdXRpb24KICAgICAgICBPcHMtPj5JRDogUE9TVCAvYXBpL2ludGVybmFsLW9wcy9jb21wYW5pZXMvZnJlZXplCiAgICAgICAgSUQtPj5SZWRpczogREVMIGNhcmQgKEtpbGwgU3dpdGNoIERlcGxveWVkKQogICAgZWxzZSBpcyBWYWxpZCBNZXJjaGFudAogICAgICAgIEF1dGgtPj5SZWRpczogSU5DUiB2ZWxvY2l0eSAoRGFpbHkgTGltaXQpCiAgICAgICAgCiAgICAgICAgTm90ZSByaWdodCBvZiBBdXRoOiBQaGFzZSAyOiBMaXF1aWRpdHkgQ2hlY2sKICAgICAgICBBdXRoLT4-UmVkaXM6IERFQ1JCWUZMT0FUIHdhbGxldDoxMjM6YmFsYW5jZSBBbW91bnQKICAgICAgICAKICAgICAgICBhbHQgSW5zdWZmaWNpZW50IEZ1bmRzCiAgICAgICAgICAgIFJlZGlzLS0-PkF1dGg6IEZsb2F0OiAtMTUuMDAKICAgICAgICAgICAgQXV0aC0-PlJlZGlzOiBJTkNSQllGTE9BVCAoUm9sbGJhY2sgRGVkdWN0aW9uKQogICAgICAgICAgICBBdXRoLT4-S2Fma2E6IFB1Ymxpc2ggaW50ZXJuYWwtYWxlcnQtdG9waWMKICAgICAgICAgICAgS2Fma2EtPj5Ob3RpZjogQ29uc3VtZXMgQWxlcnQgRXZlbnQKICAgICAgICAgICAgTm90aWYtPj5PcHM6IFNlbmRzIFNNVFAgRW1haWwgKFN1cHBvcnQgQWxlcnQpCiAgICAgICAgICAgIEF1dGgtLT4-VGVybWluYWw6IEhUVFAgNDAwIEJhZCBSZXF1ZXN0CiAgICAgICAgICAgIAogICAgICAgICAgICBOb3RlIHJpZ2h0IG9mIE9wczogUG9zdC1BbGVydCBSZXNvbHV0aW9uCiAgICAgICAgICAgIE9wcy0-PkVtcGxveWVlOiBFbWFpbHMgVXNlcjogIlBsZWFzZSBhc2sgZm9yIGJ1ZGdldCBpbmNyZWFzZSIKICAgICAgICBlbHNlIFN1ZmZpY2llbnQgRnVuZHMKICAgICAgICAgICAgUmVkaXMtLT4-QXV0aDogRmxvYXQ6IDM1NS4wMAogICAgICAgICAgICBBdXRoLT4-S2Fma2E6IFB1Ymxpc2ggYXV0aC1hcHByb3ZlZC10b3BpYwogICAgICAgICAgICBBdXRoLS0-PlRlcm1pbmFsOiBIVFRQIDIwMCBPSyAoQXBwcm92ZWQhKQogICAgICAgIGVuZAogICAgZW5kCiAgICBkZWFjdGl2YXRlIEF1dGgK" alt="Transaction Sequence" /></div>
+
+        
+        
+        <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <h4 style="margin-top: 0; color: #0f172a; font-size: 1.3rem;">Exhaustive Step-by-Step Execution Breakdown</h4>
+            
+            <p><strong>Initial Webhook Injection</strong></p>
+            <ul style="margin-bottom: 20px; list-style-type: none; padding-left: 0;">
+                <li><strong style="color: #2563eb;">Step 1:</strong> The Employee physically swipes their virtual card at a terminal.</li>
+                <li><strong style="color: #2563eb;">Step 2:</strong> Because we own the Visa BIN routing, the terminal bounces the request to Visa, which fires an HTTP POST payload containing the JSON transaction data into our Auth Engine.</li>
+                <li><strong style="color: #2563eb;">Step 3:</strong> The Auth Engine immediately executes a self-check on the Merchant Category Code (MCC) to ensure the terminal isn't a prohibited merchant.</li>
+            </ul>
+
+            <p><strong>Branch A: The Compliance Failure Flow (e.g., Casino Swipe)</strong></p>
+            <ul style="margin-bottom: 20px; list-style-type: none; padding-left: 0;">
+                <li><strong style="color: #2563eb;">Step 4:</strong> The Auth Engine detects the restricted MCC and instantly publishes an event to the <code>internal-alert-topic</code> in Kafka.</li>
+                <li><strong style="color: #2563eb;">Step 5:</strong> The Notification Service asynchronously consumes that Kafka event.</li>
+                <li><strong style="color: #2563eb;">Step 6:</strong> The Notification Service dispatches an urgent SMTP email to the Human Ops (Compliance) team.</li>
+                <li><strong style="color: #2563eb;">Step 7:</strong> Simultaneously, the Auth Engine replies to Visa with an HTTP 403 Forbidden, declining the card at the terminal.</li>
+                <li><strong style="color: #2563eb;">Step 8:</strong> The Human Ops Analyst reads the email and hits the <code>POST /api/internal-ops/companies/freeze</code> endpoint.</li>
+                <li><strong style="color: #2563eb;">Step 9:</strong> The Identity Service connects to the Redis Grid and fires a <code>DEL card</code> command, permanently deploying the kill switch and destroying the card's routing data.</li>
+            </ul>
+
+            <p><strong>Branch B: The Legitimate Merchant Flow & Liquidity Check</strong></p>
+            <ul style="margin-bottom: 20px; list-style-type: none; padding-left: 0;">
+                <li><strong style="color: #2563eb;">Step 10:</strong> If the MCC was valid, the Auth Engine hits Redis with an <code>INCR velocity</code> command to ensure the card hasn't hit its daily swipe limit.</li>
+                <li><strong style="color: #2563eb;">Step 11:</strong> The Auth Engine then executes a <code>DECRBYFLOAT</code> command against the Redis Grid to atomically subtract the swipe amount from the employee's wallet.</li>
+            </ul>
+            
+            <p><strong>Branch C: The Liquidity Failure Flow (Insufficient Funds)</strong></p>
+            <ul style="margin-bottom: 20px; list-style-type: none; padding-left: 0;">
+                <li><strong style="color: #2563eb;">Step 12:</strong> Redis returns a negative float (e.g., -15.00), proving the employee does not have enough budget.</li>
+                <li><strong style="color: #2563eb;">Step 13:</strong> The Auth Engine executes a manual rollback using an <code>INCRBYFLOAT</code> command to restore the original balance.</li>
+                <li><strong style="color: #2563eb;">Step 14:</strong> The Auth Engine publishes an event to the <code>internal-alert-topic</code> targeting the Support Desk.</li>
+                <li><strong style="color: #2563eb;">Step 15:</strong> The Notification Service consumes the Kafka event.</li>
+                <li><strong style="color: #2563eb;">Step 16:</strong> The Notification Service sends an SMTP email to the Customer Support team.</li>
+                <li><strong style="color: #2563eb;">Step 17:</strong> Simultaneously, the Auth Engine rejects the swipe at the terminal via HTTP 400 Bad Request.</li>
+                <li><strong style="color: #2563eb;">Step 18:</strong> The Human Support Agent proactively emails the Employee advising them to request a budget increase from their founder.</li>
+            </ul>
+
+            <p><strong>Branch D: The Final Success Flow & Asynchronous Settlement</strong></p>
+            <ul style="margin-bottom: 0; list-style-type: none; padding-left: 0;">
+                <li><strong style="color: #2563eb;">Step 19:</strong> If the employee had sufficient funds, Redis returns a positive float (e.g., 355.00).</li>
+                <li><strong style="color: #2563eb;">Step 20:</strong> The Auth Engine drops an <code>auth-approved-topic</code> event onto the Apache Kafka bus (Fire and Forget).</li>
+                <li><strong style="color: #2563eb;">Step 21:</strong> The Auth Engine replies HTTP 200 OK to Visa, approving the transaction in under 200 milliseconds. The heavy disk I/O operations are left to the Ledger Service which will asynchronously consume Step 20 later.</li>
+                <li><a href="#tech-stack" style="color: #3b82f6; text-decoration: none; font-weight: 600;">Technology Stack</a></li>
+                <li><a href="#core-features" style="color: #3b82f6; text-decoration: none; font-weight: 600;">Core Platform Features & Capabilities</a></li>
+                <li><a href="#chapter-10" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 10: Developer Environment & Deployment</a></li>
+                <li><a href="#chapter-11" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 11: Observability & Distributed Tracing</a></li>
+                <li><a href="#chapter-12" style="color: #3b82f6; text-decoration: none; font-weight: 600;">CHAPTER 12: The Saga Pattern (Distributed Transactions)</a></li>
+            </ul>
+        </div>
+
+        <h3>7.3 Multi-Tenancy Control Flow (Row-Level Security)</h3>
+        <p>How does the system guarantee that a Manager at Acme Corp cannot view an Employee at Globex?</p>
+        <div class="diagram-container"><img src="https://mermaid.ink/svg/c2VxdWVuY2VEaWFncmFtCiAgICBhdXRvbnVtYmVyCiAgICBhY3RvciBBZG1pbiBhcyBBY21lIENvcnAgQWRtaW4KICAgIHBhcnRpY2lwYW50IEdhdGV3YXkgYXMgQVBJIEdhdGV3YXkKICAgIHBhcnRpY2lwYW50IEp3dCBhcyBKd3RTZXJ2aWNlCiAgICBwYXJ0aWNpcGFudCBJRCBhcyBJZGVudGl0eSBTZXJ2aWNlCiAgICBwYXJ0aWNpcGFudCBEQiBhcyBQb3N0Z3JlU1FMCgogICAgQWRtaW4tPj5HYXRld2F5OiBHRVQgL2FwaS9lbXBsb3llZXMKICAgIEdhdGV3YXktPj5Kd3Q6IFZhbGlkYXRlIENyeXB0b2dyYXBoaWMgU2lnbmF0dXJlCiAgICBKd3QtLT4-R2F0ZXdheTogVmFsaWQgQ2xhaW1zIGVtYWlsLCByb2xlLCBBY21lIENvcnAKICAgIAogICAgR2F0ZXdheS0-PklEOiBGb3J3YXJkIFJlcXVlc3Qgd2l0aCBTZWN1cml0eSBDb250ZXh0CiAgICAKICAgIGFjdGl2YXRlIElECiAgICBJRC0-PklEOiBFeHRyYWN0IEFjbWUgQ29ycCBmcm9tIENvbnRleHQKICAgIElELT4-REI6IFNFTEVDVCBGUk9NIHVzZXJzIFdIRVJFIGNvbXBhbnlOYW1lID0gQWNtZSBDb3JwCiAgICBEQi0tPj5JRDogUmV0dXJucyBMaXN0IG9mIEFjbWUgRW1wbG95ZWVzCiAgICBJRC0tPj5HYXRld2F5OiBIVFRQIDIwMCBPSwogICAgZGVhY3RpdmF0ZSBJRAogICAgCiAgICBHYXRld2F5LS0-PkFkbWluOiBEaXNwbGF5cyBFbXBsb3llZXMgb24gRGFzaGJvYXJkCg==" alt="Security Control Flow" /></div>
+    
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+<h2 id="chapter-8">CHAPTER 8: Implemented Fault Tolerance & Internal Ops</h2>
+<p>Unlike theoretical architectures, the following mechanisms are strictly implemented in the underlying Java codebase and active in the <code>docker-compose</code> cluster.</p>
+
+<h3>8.1 Database Contention & Transaction Rolling (Implemented)</h3>
+<p>If the Auth Engine detects Insufficient Funds, it executes a strict rollback in Redis. 
+Because we use <code>DECRBYFLOAT</code> to atomically deduct balances, if the result is negative, the Auth Engine immediately executes an <code>INCRBYFLOAT</code> to restore the exact amount, returning an HTTP 400 Bad Request to the terminal. This prevents the "Double Spend" problem natively in the code.</p>
+
+<h3>8.2 S3 Blob Storage Offloading (Implemented)</h3>
+<p>To prevent PostgreSQL from crashing under the weight of thousands of JPEG receipt uploads, we integrated <strong>MinIO (Local AWS S3)</strong> in our <code>docker-compose.yml</code>. 
+When a user hits the Ledger Service to upload a receipt, the Java code uses the <code>aws-java-sdk-s3</code> to stream the bytes directly to the <code>boundless-receipts</code> bucket on Port 9000, and only saves the lightweight <code>s3Url</code> string in Postgres.</p>
+
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+<h2 id="chapter-9">CHAPTER 9: Implemented Alert Resolution (Notification Service)</h2>
+<p>When the Auth Engine publishes to the <code>internal-alert-topic</code>, we implemented a <strong>Universal Routing Engine</strong> that categorizes the failure and routes it to specific internal teams via the Notification Service (which consumes the topic and fires JavaMailSender SMTP emails).</p>
+
+<h3>9.1 Compliance Routing (e.g., Casino Swipe / Brute Force)</h3>
+<ul>
+    <li><strong>The Code:</strong> If the MCC is restricted, the Auth Engine builds a payload targeting <code>ROLE_PLATFORM_COMPLIANCE</code>.</li>
+    <li><strong>The Resolution:</strong> The Notification Service receives the Kafka event and emails the internal Compliance Team. The analyst logs in and hits our implemented <code>/api/internal-ops/companies/{name}/freeze</code> endpoint in the Identity Service, which flips the Postgres status to FROZEN.</li>
+</ul>
+
+<h3>9.2 Customer Support Routing (e.g., Insufficient Funds)</h3>
+<ul>
+    <li><strong>The Code:</strong> If the Redis balance check drops below zero, the Auth Engine routes the failure to <code>ROLE_PLATFORM_SUPPORT</code>.</li>
+    <li><strong>The Resolution:</strong> The Notification Service emails the Customer Support desk with the exact reason for the decline, allowing them to proactively email the employee explaining why their card bounced.</li>
+</ul>
+
+<h3>9.3 Treasury Routing (e.g., Master Wallet Depleted)</h3>
+<ul>
+    <li><strong>The Code:</strong> If a Company Admin tries to fund an employee wallet but their Master Wallet is empty, the Identity Service drops an alert targeting <code>ROLE_PLATFORM_TREASURY</code>.</li>
+    <li><strong>The Resolution:</strong> The Notification Service emails the Treasury Team, who can then manually contact the client for a bank wire, and then use our implemented <code>POST /api/internal-ops/master-wallet/fund</code> endpoint to restore liquidity.</li>
+</ul>
+
+
+<h3>9.4 Asynchronous KYB Onboarding (Human-in-the-Loop)</h3>
+<p>To prevent malicious actors from gaining access to the platform, Boundless does not auto-approve new corporate registrations. We implemented a strict asynchronous, human-in-the-loop KYB (Know Your Business) workflow.</p>
+<ul>
+    <li><strong>The Registration:</strong> When a founder hits <code>POST /api/public/register-company</code>, the system saves the company to PostgreSQL but hardcodes their <code>kybStatus</code> to <code>PENDING_MANUAL_REVIEW</code>. No Master Wallet is created, meaning no money can be moved.</li>
+    <li><strong>The Alert:</strong> The API drops an event onto the Kafka <code>internal-alert-topic</code>. The Notification Service consumes this and fires an urgent email to the internal Compliance Team containing the company's EIN (Tax ID).</li>
+    <li><strong>The Security Boundary:</strong> Once the human officer verifies the EIN externally, they log into the Boundless Admin Dashboard. They must possess a JWT containing the <code>ROLE_PLATFORM_COMPLIANCE</code> authority.</li>
+    <li><strong>The Execution:</strong> The officer hits <code>POST /api/internal-ops/companies/{name}/approve</code>. Because they have the correct cryptographic role, the Spring Security <code>@PreAuthorize</code> check passes. The system flips the status to <code>APPROVED</code> and dynamically generates the company's Master Wallet, officially unlocking their ability to issue cards.</li>
+</ul>
+
+
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+<h2 id="chapter-10">CHAPTER 10: Developer Environment & Deployment</h2>
+<p>To run the Boundless Microservices architecture locally, you will need Java 17, Maven, and Docker. The entire stack is orchestrated to run on isolated ports to prevent conflicts.</p>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+    <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <h4 style="margin-top: 0; color: #0f172a;">Core Infrastructure</h4>
+        <ul style="padding-left: 20px; line-height: 1.8;">
+            <li><strong>PostgreSQL:</strong> Port <code>5432</code></li>
+            <li><strong>Redis Cluster:</strong> Port <code>6379</code></li>
+            <li><strong>Apache Kafka:</strong> Port <code>9092</code> (Zookeeper: 2181)</li>
+            <li><strong>Zipkin (Tracing):</strong> Web UI Port <code>9411</code> | <a href="http://localhost:9411" target="_blank" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Open Zipkin UI ↗</a></li>
+            <li><strong>LocalStack S3 (Local):</strong> API Port <code>4566</code> (AWS S3 Mock)</li>
+        </ul>
+        <p style="margin-bottom: 0; font-size: 0.9em; color: #475569;"><em>Run via: <code>docker-compose up -d</code></em></p>
+    </div>
+    
+    <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <h4 style="margin-top: 0; color: #0f172a;">Spring Boot Services & API Docs</h4>
+        <ul style="padding-left: 20px; line-height: 1.8;">
+            <li><strong>API Gateway:</strong> Port <code>8080</code></li>
+            <li><strong>Identity Service:</strong> Port <code>8081</code> | <a href="http://localhost:8081/swagger-ui/index.html" target="_blank" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Open Swagger UI ↗</a></li>
+            <li><strong>Auth Engine:</strong> Port <code>8082</code> | <a href="http://localhost:8082/swagger-ui/index.html" target="_blank" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Open Swagger UI ↗</a></li>
+            <li><strong>Ledger Service:</strong> Port <code>8083</code> | <a href="http://localhost:8083/swagger-ui/index.html" target="_blank" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Open Swagger UI ↗</a></li>
+            <li><strong>Notification Service:</strong> Port <code>8084</code> (No public APIs)</li>
+        </ul>
+    </div>
+</div>
+
+<h3>How to Start the Microservices</h3>
+<p>You can compile and boot each service independently using the Maven CLI from the root project directory:</p>
+
+<div style="background-color: #1e293b; color: #f8fafc; padding: 20px; border-radius: 8px; font-family: monospace; line-height: 1.6; margin-bottom: 20px;">
+    # 1. Start the API Gateway<br>
+    <span style="color: #6ee7b7;">mvn spring-boot:run -pl api-gateway</span><br><br>
+    
+    # 2. Start the Identity Service (Handles KYB & Postgres)<br>
+    <span style="color: #6ee7b7;">mvn spring-boot:run -pl card-identity-service</span><br><br>
+    
+    # 3. Start the Auth Engine (Handles 200ms Redis logic)<br>
+    <span style="color: #6ee7b7;">mvn spring-boot:run -pl auth-engine-service</span><br><br>
+    
+    # 4. Start the Ledger & Notification Services<br>
+    <span style="color: #6ee7b7;">mvn spring-boot:run -pl card-ledger-service</span><br>
+    <span style="color: #6ee7b7;">mvn spring-boot:run -pl notification-service</span>
+</div>
+
+<p><em><strong>Note regarding alerts:</strong> For local development and testing purposes, all Kafka-dispatched internal SMTP alerts (Compliance, Treasury, Support) have been temporarily rerouted to <strong>sidharth6034@gmail.com</strong>.</em></p>
+
+
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+<h2 id="chapter-11">CHAPTER 11: Observability & Distributed Tracing</h2>
+<p>Because Boundless is a highly decoupled, asynchronous microservices architecture, tracking a single transaction as it jumps from the API Gateway, to the Auth Engine, into Kafka, and finally to the Ledger is impossible using standard log files. To solve this, the platform utilizes <strong>OpenTelemetry</strong> and <strong>Zipkin</strong>.</p>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 20px;">
+    <h4 style="margin-top: 0; color: #1e40af; font-size: 1.2rem;">The Trace Lifecycle</h4>
+    <ol style="line-height: 1.8; font-size: 1.05rem; margin-bottom: 0;">
+        <li><strong>Generation:</strong> When a request hits the API Gateway, Spring Cloud Sleuth/Micrometer automatically generates a unique 64-bit <code>traceId</code> (e.g., <code>a3c5f9b42e...</code>).</li>
+        <li><strong>HTTP Propagation:</strong> The API Gateway forwards the request to the Auth Engine, injecting the <code>traceId</code> into the <code>traceparent</code> HTTP header.</li>
+        <li><strong>Kafka Propagation:</strong> When the Auth Engine publishes an event to Kafka, the <code>traceId</code> is automatically injected into the Kafka Message Headers.</li>
+        <li><strong>Visualization:</strong> Every microservice asynchronously fires spans to the Zipkin Server (Port <code>9411</code>) via OpenTelemetry. Engineers can open the Zipkin Web UI, paste the <code>traceId</code>, and view a visual waterfall chart of the entire lifecycle, instantly identifying bottlenecks (e.g., "The Ledger took 40ms to write to Postgres").</li>
+    </ol>
+</div>
+
+
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+<h2 id="chapter-12">CHAPTER 12: The Saga Pattern (Distributed Transactions)</h2>
+<p>Because microservices utilize separate databases (Redis vs PostgreSQL), a standard SQL <code>ROLLBACK</code> cannot save the system if a multi-step transaction fails. Boundless utilizes a <strong>Choreographed Saga Pattern</strong> to ensure zero data loss.</p>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 20px;">
+    <h4 style="margin-top: 0; color: #1e40af; font-size: 1.2rem;">The Compensating Rollback Flow</h4>
+    <ol style="line-height: 1.8; font-size: 1.05rem; margin-bottom: 15px;">
+        <li><strong>The Hold:</strong> The Auth Engine deducts the balance in Redis and fires an event to Kafka.</li>
+        <li><strong>The Failure:</strong> The Ledger Service attempts to save the transaction to PostgreSQL. If the database crashes, the Ledger catches the exception.</li>
+        <li><strong>The Compensation Event:</strong> The Ledger Service publishes the exact transaction payload to the <code>transaction-failed-compensation-topic</code> in Kafka.</li>
+        <li><strong>The Refund:</strong> The Auth Engine consumes the compensation event, looks up the wallet routing, and executes a Redis <code>INCRBYFLOAT</code> to perfectly refund the employee's wallet, reversing the original <code>DECRBYFLOAT</code>.</li>
+    </ol>
+    <div style="background-color: #f0fdfa; padding: 15px; border-left: 4px solid #14b8a6; font-size: 0.95em;">
+        <strong>🧪 Sandbox Testing (The Magic Amount):</strong> To test this Saga rollback safely on your local machine, simulate a swipe for exactly <strong>$13.37</strong>. The Ledger Service contains a hardcoded trigger that will artificially throw a PostgreSQL Connection Timeout for this exact amount, instantly initiating the full Kafka compensation rollback!
+    </div>
+</div>
+
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+<h2 id="chapter-13">CHAPTER 13: Enterprise Features (V2 Expansion)</h2>
+<p>In the V2 update, Boundless evolved from a simple ledger into a highly intelligent, real-time financial platform. Here is a simple, easy-to-understand breakdown of how each new feature flows under the hood.</p>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">1. The Live Dashboard (WebSockets) 📡</h3>
+    <p><strong>The Goal:</strong> When someone swipes their card at Starbucks, the company manager should see it pop up on their screen instantly, without ever refreshing the page.</p>
+    <p><strong>The Flow:</strong></p>
+    <ul style="line-height: 1.8;">
+        <li><strong>Step 1 (Connection):</strong> You open the browser. Your browser connects to the Ledger Service and keeps a permanent "tunnel" open (a WebSocket).</li>
+        <li><strong>Step 2 (Trigger):</strong> An employee swipes their card. The transaction successfully settles in the database.</li>
+        <li><strong>Step 3 (Push):</strong> The moment it saves to the database, Java packages the transaction data into a JSON message and fires it down the open tunnel (the <code>/topic/transactions</code> channel).</li>
+        <li><strong>Step 4 (Display):</strong> Your browser catches the message and instantly paints a new card on the screen.</li>
+    </ul>
+</div>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">2. Multi-Currency Wallets 🌍</h3>
+    <p><strong>The Goal:</strong> Allow an employee to buy a train ticket in London (GBP) using a US company card (USD), while charging the exact correct amount based on today's exchange rate.</p>
+    <p><strong>The Flow:</strong></p>
+    <ul style="line-height: 1.8;">
+        <li><strong>Step 1 (Swipe):</strong> The card is swiped for £100 GBP.</li>
+        <li><strong>Step 2 (Fetch Rate):</strong> The <code>CurrencyService</code> instantly reaches out to an external Foreign Exchange API to ask: "What is the live exchange rate for GBP to USD?"</li>
+        <li><strong>Step 3 (Fallback):</strong> If the FX API is down, the system is smart enough to use a hardcoded "safety fallback" rate so the employee isn't stranded at the train station.</li>
+        <li><strong>Step 4 (Record):</strong> The Ledger saves both numbers: the original £100 GBP (so the employee recognizes the charge on their app) and the converted $125 USD (so the company's accounting adds up).</li>
+    </ul>
+</div>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">3. Smart Receipt OCR (Gemini AI) 📸</h3>
+    <p><strong>The Goal:</strong> Stop forcing accountants to manually read coffee receipts. Let an AI do it automatically.</p>
+    <p><strong>The Flow:</strong></p>
+    <ul style="line-height: 1.8;">
+        <li><strong>Step 1 (Upload):</strong> An employee takes a photo of a receipt and uploads it via the API.</li>
+        <li><strong>Step 2 (Storage):</strong> The image is securely uploaded to a Cloudinary bucket for permanent storage, and the URL is saved.</li>
+        <li><strong>Step 3 (AI Vision):</strong> The actual image bytes are piped to Google's <strong>Gemini 2.0 Flash Vision AI</strong>. We prompt Gemini: <em>"Read this receipt and tell me the total amount and the merchant name."</em></li>
+        <li><strong>Step 4 (Auto-Match):</strong> The system takes Gemini's extracted text and mathematically compares it against the database. If Gemini saw "$5.00 Starbucks" and the database says "$5.00 Starbucks", the system marks the transaction's audit status as <code>MATCHED</code>.</li>
+    </ul>
+</div>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">4. The Immutable Audit Trail 📜</h3>
+    <p><strong>The Goal:</strong> Make sure no one (not even a hacker or rogue employee) can silently alter financial history without leaving a permanent footprint.</p>
+    <p><strong>The Flow:</strong> Every time something important happens (a card is frozen, a receipt is uploaded, currency is converted), the system writes a permanent log into an <code>AuditLog</code> table. This table is "append-only", meaning accountants can always look back to see exactly <strong>who</strong> did <strong>what</strong> and <strong>when</strong>. It is the ultimate financial security camera.</p>
+</div>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">5. B2B Webhook Engine 🔔</h3>
+    <p><strong>The Goal:</strong> Let large corporate clients connect their own custom software to our platform, so they get instant programmatic alerts when their employees spend money.</p>
+    <p><strong>The Flow:</strong></p>
+    <ul style="line-height: 1.8;">
+        <li><strong>Step 1 (Register):</strong> A client registers their company's server URL (e.g., <code>https://api.mycompany.com/webhook</code>) with us.</li>
+        <li><strong>Step 2 (Event):</strong> An employee spends money.</li>
+        <li><strong>Step 3 (Package):</strong> In the background, our Ledger Service wraps the transaction data into a JSON package.</li>
+        <li><strong>Step 4 (Security):</strong> To prove the message came from us (and not an imposter), we mathematically "sign" the message using a shared secret password (an HMAC-SHA256 hash).</li>
+        <li><strong>Step 5 (Fire):</strong> We shoot the JSON package over to the client's URL asynchronously.</li>
+    </ul>
+</div>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">6. AI Financial Storytelling 🧠</h3>
+    <p><strong>The Goal:</strong> Instead of making the CEO stare at an Excel spreadsheet with 10,000 rows, let an AI summarize the company's financial health as a story.</p>
+    <p><strong>The Flow:</strong></p>
+    <ul style="line-height: 1.8;">
+        <li><strong>Step 1 (Query):</strong> You hit the <code>/story</code> endpoint.</li>
+        <li><strong>Step 2 (Data Scoop):</strong> Java scoops up all the raw transaction data from PostgreSQL (amounts, merchants, dates, receipt status).</li>
+        <li><strong>Step 3 (Prompt Injection):</strong> Java dynamically builds a giant text prompt: <em>"You are a CFO. Read this data and write a report called 'Where Did The Money Go?'. Tell me the red flags."</em></li>
+        <li><strong>Step 4 (Generate):</strong> Gemini analyzes the data and replies with a beautifully formatted, plain-English executive summary highlighting exactly who spent the most and where the company can save money!</li>
+    </ul>
+</div>
+
+<hr style="margin: 60px 0; border: 0; height: 2px; background: #e2e8f0;">
+<h2 id="chapter-14">CHAPTER 14: API Gateway Security (Authentication & Authorization)</h2>
+<p>In a microservices architecture, each service is a completely independent application. Rather than duplicating security logic across every service, Boundless uses a <strong>centralized API Gateway</strong> on port <code>8080</code> as the single security checkpoint for the entire platform.</p>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">How The Security Flow Works 🔐</h3>
+    <p><strong>The Goal:</strong> No unauthenticated user should ever be able to access any business API (transactions, insights, webhooks, audit logs). Only the login and public registration endpoints are open.</p>
+    <p><strong>The Flow:</strong></p>
+    <ul style="line-height: 1.8;">
+        <li><strong>Step 1 (Login):</strong> The user hits <code>POST /api/auth/login</code> with their email and password. The Identity Service validates the credentials and returns a signed <strong>JWT token</strong> containing the user's email, userId, and role.</li>
+        <li><strong>Step 2 (Request):</strong> For every subsequent API call, the user includes the token in the <code>Authorization: Bearer &lt;token&gt;</code> header.</li>
+        <li><strong>Step 3 (Gateway Intercept):</strong> The API Gateway (<code>GatewayAuthFilter</code>) intercepts the request <em>before</em> it reaches any downstream service. It checks: is the endpoint public? If not, is there a valid JWT token?</li>
+        <li><strong>Step 4 (JWT Validation):</strong> The Gateway decodes the JWT using the <strong>same shared secret key</strong> that the Identity Service used to sign it. If the token is expired, tampered with, or missing, the Gateway immediately returns <code>401 UNAUTHORIZED</code> and the request never reaches the downstream service.</li>
+        <li><strong>Step 5 (Header Injection):</strong> If the token is valid, the Gateway extracts the user's identity (email, role, userId) and injects them as <strong>trusted internal headers</strong> (<code>X-Trusted-User-Email</code>, <code>X-Trusted-User-Role</code>, <code>X-Trusted-User-Id</code>) before forwarding the request downstream.</li>
+        <li><strong>Step 6 (Downstream Trust):</strong> The downstream service (e.g., Ledger Service) simply reads these trusted headers to know WHO is making the request. It never needs to decode JWT itself — the Gateway already did the hard work.</li>
+    </ul>
+</div>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">The Shared JWT Secret Key 🔑</h3>
+    <p>Both the <code>card-identity-service</code> (which <em>generates</em> tokens) and the <code>api-gateway-service</code> (which <em>validates</em> tokens) share the exact same secret key configured in their <code>application.yml</code> files:</p>
+    <p><code>jwt.secret: YOUR_JWT_SECRET_KEY_MUST_BE_AT_LEAST_256_BITS_LONG_CHANGE_ME!</code></p>
+    <p>This key is used with <strong>HMAC-SHA256</strong> to sign and verify tokens. If anyone tampers with even a single character in the JWT payload, the signature verification will fail and the Gateway will reject the request instantly.</p>
+</div>
+
+<div style="background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #1e40af;">API Security Matrix 📋</h3>
+    <p>Below is the complete access control matrix for every API endpoint across the platform:</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem;">
+        <thead>
+            <tr style="background-color: #1e3a8a; color: white;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Endpoint</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Method</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Access</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="background-color: #f0fdf4;">
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/auth/login</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">POST</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔓 Public</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">User login — returns JWT token</td>
+            </tr>
+            <tr style="background-color: #f0fdf4;">
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/companies/register</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">POST</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔓 Public</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">Company KYB onboarding</td>
+            </tr>
+            <tr style="background-color: #f0fdf4;">
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/network/swipe</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">POST</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔓 Public</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">Visa/Mastercard network swipe (machine-to-machine)</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/transactions/{id}/receipt</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">POST</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">Upload receipt + Gemini AI OCR matching</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/transactions/company/{name}</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">GET</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">View all company transactions</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/insights/ask</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">POST</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">AI natural-language query on transactions</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/insights/story</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">GET</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">"Where Did The Money Go?" AI executive report</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/audit</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">GET</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">View immutable audit trail</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/audit/{type}/{id}</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">GET</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">Filter audit log by entity</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/webhooks/register</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">POST</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">Register a company webhook URL</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/webhooks</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">GET</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">List all registered webhooks</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/webhooks/{id}</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">DELETE</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">Remove a webhook registration</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/company-admin/**</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">ALL</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">Company admin operations (onboard employees, issue cards)</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;"><code>/api/internal-ops/**</code></td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">ALL</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">🔒 JWT Required</td>
+                <td style="padding: 10px; border: 1px solid #e2e8f0;">Platform compliance, treasury, and support operations</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div style="background-color: #f0fdfa; padding: 20px; border-left: 4px solid #14b8a6; margin-bottom: 30px; font-size: 0.95em;">
+    <strong>🏗 Architecture Decision:</strong> Why Gateway-level security instead of per-service security?
+    <ul style="margin-top: 10px; line-height: 1.8;">
+        <li><strong>Single Point of Control:</strong> One filter to update, one secret to rotate, one place to add new public endpoints.</li>
+        <li><strong>Lightweight Downstream Services:</strong> The Ledger, Auth Engine, and Notification services stay lean — zero security dependencies, zero JWT libraries, zero filter chains.</li>
+        <li><strong>Industry Standard:</strong> Netflix Zuul, AWS API Gateway, Kong, and Cloudflare all use this exact same pattern. Authenticate once at the edge, trust internally.</li>
+    </ul>
+</div>
+
+</div>
+
+<h2 id="chapter-15">CHAPTER 15: Cross-Microservice Security & Internal APIs</h2>
+<p>In a distributed system, backend services often need to fetch data from one another without exposing those capabilities to the public internet. Boundless FinTech secures internal service-to-service communication using strict <strong>API Gateway Isolation</strong> and <strong>Cross-Microservice Authorization</strong>.</p>
+
+<h3>1. Gateway Blocking & Isolation</h3>
+<p>The <code>api-gateway-service</code> (Port 8080) acts as the impenetrable front door to the platform. If you inspect the routing rules in the Gateway's configuration, the <code>/api/internal/**</code> path is deliberately omitted from the routing predicates.</p>
+<div style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: monospace; overflow-x: auto; margin-bottom: 20px;">
+<pre style="margin: 0;"><code># API Gateway Configuration
+routes:
+  - id: card-identity-service
+    uri: http://localhost:8081
+    predicates:
+      # /api/internal/** is MISSING intentionally!
+      - Path=/api/auth/**, /api/public/**, /api/admin/**, /api/employees/**</code></pre>
+</div>
+<p>If a hacker attempts to execute a direct attack on <code>http://localhost:8080/api/internal/verify-card-ownership</code>, the Gateway immediately drops the traffic and returns a <strong>404 Not Found</strong>. Internal endpoints can only be accessed directly over the private backend network (e.g., <code>localhost:8081</code>).</p>
+
+<h3>2. The "verify-card-ownership" API (Preventing IDOR Attacks)</h3>
+<p>When an employee uploads a receipt to the <code>Ledger Service</code>, the Ledger Service is functionally "blind" to identity—it only records transaction math. If left unchecked, a malicious employee could guess someone else's <code>transactionId</code> and upload fake receipts to their account (an Insecure Direct Object Reference / IDOR vulnerability).</p>
+<p>To prevent this, the Ledger Service executes a real-time HTTP handshake with the Identity Service:</p>
+<ul style="line-height: 1.8; margin-bottom: 20px;">
+    <li><strong>Step 1:</strong> The Ledger Service intercepts the user's JWT token and fires a background HTTP GET request to the Identity Service: <code>/api/internal/verify-card-ownership?cardNumber=XYZ</code></li>
+    <li><strong>Step 2:</strong> The Identity Service decodes the forwarded JWT, extracts the Employee's email, and queries the database to see if that email legally owns the credit card.</li>
+    <li><strong>Step 3:</strong> The Identity Service returns a boolean <code>true</code> or <code>false</code>.</li>
+    <li><strong>Step 4:</strong> If false, the Ledger Service immediately blocks the file upload and returns a <code>403 Forbidden</code>.</li>
+</ul>
+
+<h3>3. Data Enrichment (Notification Service)</h3>
+<p>Kafka events (like <em>"Card 1234 Requires an OTP"</em>) intentionally do not contain PII like email addresses. When the <strong>Notification Service</strong> consumes an event from Kafka, it executes a silent HTTP lookup against the Identity Service (<code>/api/internal/cards/{cardNumber}/email</code>) to retrieve the target's email address right before dispatching the SMTP payload. This keeps the Kafka event stream completely sanitized of PII.</p>
+
+<div style="background-color: #fef2f2; padding: 20px; border-left: 4px solid #ef4444; margin-bottom: 30px; font-size: 0.95em;">
+    <strong>⚠️ SECURITY LESSON: The @EnableMethodSecurity Bug</strong><br><br>
+    During early development, the <code>InternalOpsController</code> was protected by <code>@PreAuthorize("hasRole('PLATFORM_TREASURY')")</code>, but the Identity Service's <code>SecurityConfig.java</code> lacked the <code>@EnableMethodSecurity</code> toggle. Because this annotation was missing, Spring Boot silently bypassed every method-level security check in the entire service. This allowed a Company Admin to successfully hit the <code>/master-wallet/fund</code> endpoint. The toggle has since been activated, sealing the privilege escalation vulnerability.
+</div>
+
+<h2 id="chapter-16">CHAPTER 16: Observability & Distributed Tracing</h2>
+<p>Because Boundless is a highly decoupled, asynchronous architecture, tracking a single transaction as it jumps from the API Gateway, to the Auth Engine, into Kafka, and finally to the Ledger is impossible using standard log files. To solve this, the platform utilizes <strong>Micrometer Tracing</strong>, <strong>Brave</strong>, and <strong>Zipkin</strong> via <code>micrometer-tracing-bridge-brave</code>.</p>
+
+<h3>1. The Trace Lifecycle</h3>
+<ul style="line-height: 1.8; margin-bottom: 20px;">
+    <li><strong>Generation:</strong> When a request hits the API Gateway (<code>Port 8080</code>), Micrometer automatically generates a unique 64-bit <code>traceId</code> (e.g., <code>a3c5f9b42e...</code>).</li>
+    <li><strong>HTTP Propagation:</strong> The API Gateway forwards the request to the Auth Engine, injecting the <code>traceId</code> into the <code>b3</code> HTTP headers.</li>
+    <li><strong>Kafka Propagation:</strong> When the Auth Engine publishes an event to Kafka, the <code>traceId</code> is automatically injected into the Kafka Message Headers.</li>
+    <li><strong>Visualization:</strong> Every microservice asynchronously fires spans to the Zipkin Server (<code>Port 9411</code>) over HTTP via a custom <code>TracingConfig</code> <code>BytesMessageSender</code>.</li>
+</ul>
+
+<h3>2. Interpreting the Zipkin UI</h3>
+<p>When you open Zipkin and query for recent traces, you will see a list of rows. Each row represents a <strong>single, distinct request or event</strong> that entered the system.</p>
+<ul style="line-height: 1.8; margin-bottom: 20px;">
+    <li><strong>Spans Count:</strong> A higher number (e.g., 13 spans) indicates a distributed transaction that bounced around multiple components or services.</li>
+    <li><strong>Root Trace Name:</strong> The name of the trace (e.g., <code>auth-engine-service: http post /api/network/swipe</code>) tells you the "Root" entry point of that request. If you hit a service directly, that service is the root. If you go through the API Gateway, the Gateway will be the root.</li>
+</ul>
+
+<h3>3. The Waterfall View (Trace Details)</h3>
+<p>Clicking <strong>SHOW</strong> on a trace opens the Waterfall view, which visually breaks down where the time went:</p>
+<ul style="line-height: 1.8; margin-bottom: 20px;">
+    <li><strong>The Root Span (Top Bar):</strong> Represents the total time the request spent inside the entry service.</li>
+    <li><strong>Child Spans (Cascading Bars):</strong> Every time the code makes a call to an external database, cache, or API, it is recorded as a child span. For example, you will see <code>redis: exists</code>, <code>redis: get</code>, and <code>redis: set</code> spans cascading below the Auth Engine root span. This proves exactly how many milliseconds the Redis O(1) Data Grid lookups took during the authorization phase.</li>
+    <li><strong>Missing Downstream Services:</strong> If a trace stops at the Auth Engine and never shows Kafka spans reaching the Ledger or Notification services, it means the transaction was halted (e.g., declined for insufficient funds or flagged for a 3DS OTP step-up challenge).</li>
+</ul>
+
+<div style="background-color: #f0fdfa; padding: 20px; border-left: 4px solid #14b8a6; margin-bottom: 30px; font-size: 0.95em;">
+    <strong>💡 Pro Tip for Testing Traces:</strong><br><br>
+    If you test a swipe by hitting the <code>auth-engine-service</code> port directly (8082), the API Gateway will not appear in the trace. Always send requests through the Gateway (8080) to see the full end-to-end trace graph!
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: ledger-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/boundless_db
+    username: boundless_admin
+    password: boundless_password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: ledger-settlement-group
+      auto-offset-reset: earliest
+    producer:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
+  ai:
+    google:
+      genai:
+        api-key: ${gemini.api.key}
+        chat:
+          options:
+            model: gemini-3.8-flash
+
+logging:
+  pattern:
+    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+    export:
+      zipkin:
+        endpoint: http://localhost:9411/api/v2/spans
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+# ----------------------------------------------------
+# GEMINI AI CONFIGURATION (For Insights & OCR)
+# ----------------------------------------------------
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}

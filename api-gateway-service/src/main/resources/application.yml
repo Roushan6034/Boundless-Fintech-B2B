@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway-service
+  cloud:
+    gateway:
+      routes:
+        # ----------------------------------------------------
+        # ROUTE 1: Identity & Card Management Service
+        # Handles Admin Onboarding, Logins, and Employee Wallets
+        # ----------------------------------------------------
+        - id: card-identity-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/auth/**, /api/public/**, /api/internal-ops/**, /api/company-admin/**, /api/admin/**, /api/employees/**
+
+        # ----------------------------------------------------
+        # ROUTE 2: Auth Engine Service
+        # Handles High-Speed Swipes from Visa/Mastercard
+        # ----------------------------------------------------
+        - id: auth-engine-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/network/**
+
+        # ----------------------------------------------------
+        # ROUTE 3: Ledger & Settlement Service
+        # Handles Employee Receipt Uploads
+        # ----------------------------------------------------
+        - id: ledger-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/transactions/**, /api/insights/**, /api/audit/**, /api/webhooks/**
+            
+# (Note: The Notification Service doesn't have an API route because it 
+# is a pure backend worker that only listens to Kafka!)
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+    export:
+      zipkin:
+        endpoint: http://localhost:9411/api/v2/spans

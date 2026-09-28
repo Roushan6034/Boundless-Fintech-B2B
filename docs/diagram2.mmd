@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    actor Employee
+    participant Terminal as Point of Sale
+    participant Visa as Visa Network
+    participant Auth as Auth Engine
+    participant Redis as Redis Grid
+    participant Kafka as Apache Kafka
+    participant Ledger as Ledger Service
+
+    Employee->>Terminal: Swipes Card for $5.00
+    Terminal->>Visa: Request Authorization
+    Visa->>Auth: POST /api/network/swipe
+    
+    activate Auth
+    Auth->>Redis: 1. INCR velocity (Check daily limit)
+    Redis-->>Auth: OK (Swipes = 4)
+    
+    Auth->>Redis: 2. GET card:wallet (Routing lookup)
+    Redis-->>Auth: wallet-id-123
+    
+    Auth->>Redis: 3. DECRBYFLOAT wallet:balance 5.00 (Atomic Deduction)
+    Redis-->>Auth: New Balance: $145.00
+    
+    Auth->>Kafka: 4. Publish auth-approved-topic
+    
+    Auth-->>Visa: 5. HTTP 200 OK (APPROVED)
+    deactivate Auth
+    
+    Visa-->>Terminal: Approved!
+    Terminal-->>Employee: Prints Receipt
+    
+    Note over Kafka,Ledger: Asynchronous Settlement (Slow Path)
+    Kafka->>Ledger: Consumes auth-approved-topic
+    Ledger->>Ledger: INSERT INTO transaction_ledger
+    Ledger->>Kafka: Publish receipt-reminder-topic
